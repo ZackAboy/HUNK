@@ -1,10 +1,10 @@
 # Setup
 
-This file explains how to set up and run the project locally. The Flutter app has not been initialized yet, so several sections are placeholders.
+This file explains how to set up and run the project locally. The Flutter app has been initialized for iOS and Android.
 
 ## Prerequisites
 
-Planned requirements:
+Requirements:
 
 - Flutter SDK
 - Dart SDK included with Flutter
@@ -29,15 +29,11 @@ flutter doctor
 
 ## Dependency Install
 
-Placeholder after the Flutter project is initialized:
-
 ```sh
 flutter pub get
 ```
 
 ## Run The App
-
-Placeholder after the Flutter project is initialized:
 
 ```sh
 flutter run
@@ -48,6 +44,13 @@ For a specific device:
 ```sh
 flutter devices
 flutter run -d <device-id>
+```
+
+## Test And Analyze
+
+```sh
+flutter analyze
+flutter test
 ```
 
 ## iOS Setup

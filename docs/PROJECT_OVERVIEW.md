@@ -34,11 +34,23 @@ The MVP should focus on a small, useful loop:
 
 Users should bring their own API keys. The app should not require a project-hosted backend for the initial MVP.
 
+## Trust And Resource Expectations
+
+Users will trust this app with sensitive health and fitness data. They may also store personal OpenAI or Google Gemini API keys in the app. The product must be secure-by-default, privacy-conscious, and explicit about what data it accesses and why.
+
+The app must also stay lightweight. It should avoid unnecessary background work, broad health reads, large network payloads, repeated AI calls, and wasteful local processing. A fitness coach app should not become a battery hog, memory hog, network hog, or background-processing-heavy app.
+
+See `docs/SECURITY_AND_EFFICIENCY.md` for the practical rules future agents must check before touching permissions, health data, API keys, AI prompts, networking, storage, background work, analytics, or future watch/widget support.
+
 ## Product Principles
 
 - Keep the MVP small.
 - Make health data understandable, not overwhelming.
 - Keep user control over AI provider configuration.
 - Treat health data and API keys as sensitive.
+- Make security and efficiency first-class product constraints.
+- Be privacy-conscious and secure-by-default.
+- Prefer minimal data access, minimal data retention, and explicit user control.
+- Keep the app lightweight in battery, memory, network, and background execution.
 - Prefer practical coaching and summaries over complex analytics in the first version.
 - Avoid overengineering until real feature needs require it.

@@ -26,10 +26,48 @@ Before making any code, configuration, dependency, architecture, or documentatio
 - `docs/FEATURES.md`
 - `docs/ARCHITECTURE.md`
 - `docs/TASK_LOG.md`
+- `docs/SECURITY_AND_EFFICIENCY.md`
 
 Read `docs/DECISIONS.md` when changing product direction, dependencies, architecture, integrations, storage, data models, or AI provider behavior.
 
 Read `docs/SETUP.md` when changing setup, build, platform, or development workflow requirements.
+
+## Core Engineering Priorities
+
+Security and efficiency are non-negotiable engineering priorities for this project.
+
+This app will handle sensitive personal health and fitness data. Users may also provide their own AI API keys. Every agent must actively check security and efficiency before adding or changing:
+
+- Dependencies
+- Platform permissions
+- Services
+- Data models
+- Local storage
+- Background jobs
+- Network calls
+- Health integrations
+- AI prompt construction
+- Analytics, logging, or crash reporting
+- Watch, widget, or companion app features
+
+Security rules:
+
+- Do not store sensitive data casually. API keys must use secure storage, and health data should only be retained when the feature truly needs retention.
+- Do not request broad permissions unless the feature truly needs them.
+- Prefer minimal data access, minimal retention, and explicit user control.
+- Avoid logging raw health data, API keys, AI prompts, or AI responses that may contain private health context.
+- Do not send sensitive data to any backend unless it is explicitly required, user-approved, and documented.
+- Document every security-sensitive decision in `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, and `docs/SECURITY_AND_EFFICIENCY.md` when relevant.
+
+Efficiency rules:
+
+- Do not add background processing, polling, sync loops, or recurring health reads without a documented need.
+- Scope health reads by date range and metric type.
+- Prefer local summaries and compact AI prompt context instead of raw data dumps.
+- Cache summaries where appropriate, and avoid repeatedly recomputing or resending large health histories.
+- Document every performance-sensitive decision, especially anything affecting battery, memory, network usage, startup time, or background execution.
+
+The central reference for these rules is `docs/SECURITY_AND_EFFICIENCY.md`. Future agents must check it before making changes that touch data access, storage, prompts, networking, permissions, background work, or integrations.
 
 ## Current Priorities
 
@@ -51,6 +89,7 @@ Read `docs/SETUP.md` when changing setup, build, platform, or development workfl
 - Keep platform-specific code isolated behind services or adapters.
 - Keep AI provider code isolated behind clear provider/service boundaries.
 - Treat health data as sensitive user data. Avoid logging raw health values, API keys, or chat context containing private data.
+- Check security and efficiency impacts before changing permissions, storage, network behavior, background work, health access, or AI prompt content.
 - Do not build app features when the user asks for documentation-only work.
 
 ## Architecture Rules

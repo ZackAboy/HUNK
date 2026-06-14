@@ -6,17 +6,30 @@ Feature statuses must be one of: `planned`, `in-progress`, `done`, or `blocked`.
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| Flutter app shell | planned | Top-level app structure, theme, and navigation. |
-| Home screen | planned | Entry point with summary and navigation. |
-| Health data screen | planned | Display basic connected health data and permissions state. |
-| AI coach chat screen | planned | Chat interface for user questions and coach responses. |
-| Settings screen | planned | API key entry, provider selection, and integration settings. |
-| Store OpenAI API key locally | planned | Use local secure storage when selected. |
-| Store Gemini API key locally | planned | Use local secure storage when selected. |
-| Basic Apple HealthKit integration | planned | iOS health permissions and basic data reads. |
-| Basic Google Health Connect integration | planned | Android health permissions and basic data reads. |
-| Basic health summary | planned | Small summary model derived from available health data. |
-| Chat prompt includes health summary | planned | Health summary should be included in AI coach context. |
+| Flutter app shell | done | Material 3 shell with bottom navigation for the four MVP screens. |
+| Home screen | done | Placeholder entry point for future summary and coaching prompts. |
+| Health data screen | done | Placeholder screen only; real HealthKit and Health Connect data reads are still planned. |
+| AI coach chat screen | done | Placeholder chat screen only; real AI calls are still planned. |
+| Settings screen | done | Placeholder settings screen only; local API key storage is still planned. |
+| Store OpenAI API key locally | planned | Must use secure local storage; never log, display casually, export, or store in plain preferences. |
+| Store Gemini API key locally | planned | Must use secure local storage; never log, display casually, export, or store in plain preferences. |
+| Basic Apple HealthKit integration | planned | iOS permissions must be minimal, metric-specific, and explained to users before access. |
+| Basic Google Health Connect integration | planned | Android permissions must be minimal, metric-specific, and explained to users before access. |
+| Basic health summary | planned | Summary should be compact, locally generated where practical, and avoid retaining raw data unless needed. |
+| Chat prompt includes health summary | planned | Prompts should use compact summaries and avoid unnecessary sensitive data exposure or raw history dumps. |
+
+## Phase 1 Security And Efficiency Acceptance Criteria
+
+| Feature | Acceptance Criteria |
+| --- | --- |
+| Flutter app shell | Must not introduce background work, network calls, analytics, or permissions without a documented feature need. |
+| Home screen | Must avoid showing sensitive health data until permission state, data freshness, and user intent are clear. |
+| Health data screen | Must explain requested health permissions in user-facing language before real access is requested. Reads must be scoped by metric type and date range. |
+| AI coach chat screen | Must make AI-provider transmission explicit. Prompts should include compact summaries rather than raw health histories. |
+| Settings screen | Must expose clear user control for provider choice, API key entry/removal, and future health permission controls. |
+| OpenAI/Gemini API key storage | Must use secure local storage and provide a clear delete path. Keys must not be logged, included in crash reports, or stored in test fixtures. |
+| Health integrations | Must request the minimum permissions needed for the active feature and avoid continuous background syncing unless documented and user-controlled. |
+| Basic health summary | Must prefer local processing, bounded reads, and cached summaries when data has not changed. |
 
 ## Phase 2
 

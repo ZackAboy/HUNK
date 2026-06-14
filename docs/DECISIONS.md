@@ -95,3 +95,39 @@ Status: accepted
 Context: The first goal is a working app loop: health data summary plus AI coach chat using user-owned provider keys.
 
 Consequences: Prefer simple services, clear models, and small screens before introducing deeper personalization, advanced analytics, sync, backend infrastructure, or complex state management.
+
+## 2026-06-14 - Treat Security And Efficiency As First-Class Engineering Constraints
+
+Date: 2026-06-14
+
+Decision: Security and efficiency are first-class engineering constraints for all features.
+
+Status: accepted
+
+Context: The app will handle personal health and fitness data, user-provided AI API keys, AI prompts, and future platform integrations. It also needs to avoid unnecessary battery, memory, network, and background-processing cost.
+
+Consequences: Future agents must evaluate security and efficiency before adding dependencies, permissions, services, data models, background work, network calls, health integrations, AI prompt behavior, analytics, crash reporting, or watch/widget support. Security-sensitive and performance-sensitive decisions must be documented.
+
+## 2026-06-14 - Prefer Local-First Processing Where Practical
+
+Date: 2026-06-14
+
+Decision: Prefer local-first processing and summarization where practical.
+
+Status: accepted
+
+Context: Local summaries can reduce sensitive data exposure, reduce network payload size, avoid repeated AI prompt bloat, and improve responsiveness.
+
+Consequences: Health data should be read in scoped ranges, summarized locally where practical, cached when appropriate, and sent to AI providers as compact context rather than raw histories unless a documented feature requires otherwise.
+
+## 2026-06-14 - Do Not Send Sensitive Data To A Backend Without Explicit Approval
+
+Date: 2026-06-14
+
+Decision: Sensitive data should not be sent to any app backend unless explicitly required, user-approved, and documented.
+
+Status: accepted
+
+Context: The MVP does not require a project-hosted backend. Health data, API keys, prompts, and chat content are sensitive and should not gain additional exposure by default.
+
+Consequences: Any future backend sync, account system, analytics pipeline, crash reporting payload, or remote processing path involving sensitive data must be opt-in where appropriate, clearly user-visible, and documented in `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, and `docs/SECURITY_AND_EFFICIENCY.md` before implementation.
