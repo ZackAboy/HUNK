@@ -42,6 +42,12 @@ The app must also stay lightweight. It should avoid unnecessary background work,
 
 See `docs/SECURITY_AND_EFFICIENCY.md` for the practical rules future agents must check before touching permissions, health data, API keys, AI prompts, networking, storage, background work, analytics, or future watch/widget support.
 
+## Multi-Contributor Engineering Expectations
+
+The app should be easy for multiple contributors and future AI agents to work on at the same time. Features should be split into clear modules with explicit ownership instead of large files where UI, state, storage, network calls, and platform integrations are mixed together.
+
+Modularity supports security, efficiency, testing, and future platform-specific work. HealthKit, Health Connect, AI providers, secure API key storage, watch widgets, and companion surfaces should be isolated behind well-named services, models, providers, and UI boundaries so changes in one area do not unexpectedly break another.
+
 ## Product Principles
 
 - Keep the MVP small.
@@ -49,8 +55,10 @@ See `docs/SECURITY_AND_EFFICIENCY.md` for the practical rules future agents must
 - Keep user control over AI provider configuration.
 - Treat health data and API keys as sensitive.
 - Make security and efficiency first-class product constraints.
+- Make modular development a first-class product engineering principle.
 - Be privacy-conscious and secure-by-default.
 - Prefer minimal data access, minimal data retention, and explicit user control.
 - Keep the app lightweight in battery, memory, network, and background execution.
+- Keep features easy to test, review, and modify by separating UI, state, models, services, and platform-specific logic.
 - Prefer practical coaching and summaries over complex analytics in the first version.
 - Avoid overengineering until real feature needs require it.

@@ -13,6 +13,8 @@ The Flutter project has been initialized for iOS and Android. The app currently 
 
 No real health integrations, AI provider calls, local API key storage, or app data models have been implemented yet.
 
+Current modularity assessment: the app shell is small and already separated well enough for the next task. `main.dart`, `app.dart`, individual screen files, reserved service/model/provider folders, and the reusable placeholder widget are clear. No refactor is needed for the current shell.
+
 ## Intended Structure
 
 ```text
@@ -116,6 +118,51 @@ Rules:
 - The current shell has no service, model, or provider dependencies yet.
 - New dependencies, permissions, services, background jobs, and network calls must be checked against `docs/SECURITY_AND_EFFICIENCY.md` before implementation.
 
+## Modularity Architecture Principles
+
+The codebase should be structured so multiple contributors or agents can work on separate features without repeatedly breaking each other's work.
+
+Intended boundaries:
+
+- `lib/screens/` is for top-level pages only. Screens compose widgets and talk to state/providers, but should not own integration, storage, networking, health API, or AI provider logic.
+- `lib/widgets/` is for reusable UI components. Widgets should be stateless or locally stateful where practical and should not hide business logic.
+- `lib/models/` is for simple data structures and typed contracts shared across modules.
+- `lib/services/` is for external integrations, storage, health APIs, AI API clients, platform adapters, and other system boundaries.
+- `lib/providers/` is for app state or the selected state-management layer once chosen.
+- Platform-specific logic should be isolated behind services or adapters and not scattered through UI files.
+
+Create a new file or module when:
+
+- A file is taking on more than one clear responsibility.
+- Logic will be shared by more than one screen, service, provider, or test.
+- A feature needs a distinct model, state object, service, or adapter.
+- The code touches security-sensitive behavior such as API keys, health permissions, prompt construction, storage, logging, or network calls.
+- The code touches performance-sensitive behavior such as health sync, caching, background work, retries, or watch/widget refresh.
+
+Shared dependency rules:
+
+- Avoid circular dependencies between modules.
+- Keep dependencies flowing in one direction: app shell to screens, screens to providers/widgets, providers to services/models, services to models and external systems.
+- Models should not import screens, widgets, providers, or services.
+- Services should not import screens or widgets.
+- Shared widgets should not import feature-specific services.
+- Do not add global singletons, shared mutable state, or broad utility modules without documenting why they are needed.
+
+Module API rules:
+
+- Keep APIs between modules explicit and typed.
+- Prefer passing models or small request/response objects instead of maps with unclear shape.
+- Document shared service/provider/model contracts in this file when they become part of the architecture.
+- Do not silently change a shared model, provider API, service method, or dependency direction. Update docs and tests with the change.
+
+Multi-agent coordination rules:
+
+- Before editing shared files, check `docs/ARCHITECTURE.md`, `docs/FEATURES.md`, and `docs/TASK_LOG.md` for ownership and recent changes.
+- Prefer adding isolated feature files over expanding shared files.
+- If two features need the same behavior, create a small shared service, model, provider, or widget with a clear name.
+- Record module additions, removals, renames, and responsibility changes in `docs/TASK_LOG.md`.
+- Keep docs concise so future agents can quickly locate the right file instead of re-reading the whole codebase.
+
 ## Security Architecture Principles
 
 See `docs/SECURITY_AND_EFFICIENCY.md` for the central security reference.
@@ -194,6 +241,8 @@ This file must be updated whenever any of the following are added, removed, or r
 - Providers
 - Screens
 - Widgets
+- Modules
+- Shared module APIs
 - Dependencies
 - Platform integrations
 - Data flow steps

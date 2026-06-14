@@ -4,6 +4,8 @@ This is the central reference for secure and efficient development. Future agent
 
 Security and efficiency are non-negotiable. The app handles sensitive health and fitness data, and users may store personal AI API keys. The app must avoid weak storage, unnecessary permissions, careless logging, broad data retention, hidden network behavior, and wasteful battery, memory, or network usage.
 
+Modularity supports both security and efficiency. Sensitive and resource-heavy behavior is easier to review, test, and control when it lives in clear modules instead of being scattered through UI code.
+
 ## Required Check Before Sensitive Changes
 
 Before implementing a change, answer these questions in the task notes or relevant docs when the change touches sensitive or resource-heavy behavior:
@@ -17,6 +19,16 @@ Before implementing a change, answer these questions in the task notes or releva
 - What prevents this from becoming battery-heavy, memory-heavy, or network-heavy?
 
 Document security-sensitive and performance-sensitive decisions in `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, and `docs/TASK_LOG.md` when relevant.
+
+## Modularity For Sensitive And Resource-Heavy Logic
+
+- API key handling must live in a clear storage/service boundary, not directly in UI widgets.
+- Health permissions and health reads must live in health services/adapters, not screen files.
+- AI prompt construction should live behind an explicit prompt/service boundary so sensitive context can be reviewed and minimized.
+- Network calls must live in provider-specific clients or services, not scattered through widgets.
+- Background work, caching, retries, and sync behavior must be isolated so battery, memory, and network impact can be inspected.
+- Shared sensitive models should be named clearly and should not mix raw health data, summaries, API keys, prompts, and UI-only state.
+- Module boundaries should make it obvious where sensitive data enters, where it is transformed, where it is stored, and where it leaves the device.
 
 ## API Key Handling
 

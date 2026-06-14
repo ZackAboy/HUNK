@@ -34,7 +34,7 @@ Read `docs/SETUP.md` when changing setup, build, platform, or development workfl
 
 ## Core Engineering Priorities
 
-Security and efficiency are non-negotiable engineering priorities for this project.
+Security, efficiency, and modularity are core engineering priorities for this project. Security and efficiency are non-negotiable.
 
 This app will handle sensitive personal health and fitness data. Users may also provide their own AI API keys. Every agent must actively check security and efficiency before adding or changing:
 
@@ -69,6 +69,16 @@ Efficiency rules:
 
 The central reference for these rules is `docs/SECURITY_AND_EFFICIENCY.md`. Future agents must check it before making changes that touch data access, storage, prompts, networking, permissions, background work, or integrations.
 
+Modularity rules:
+
+- Prefer small, isolated, well-named files and modules.
+- Avoid large monolithic files and tightly coupled logic.
+- Do not place business logic directly inside UI widgets unless it is truly trivial and local to that widget.
+- Keep feature boundaries clear enough that multiple contributors or agents can work without repeatedly editing the same shared files.
+- Document new modules, services, models, providers, dependencies, and cross-module contracts in `docs/ARCHITECTURE.md`.
+- Before modifying shared files such as `lib/app.dart`, shared widgets, service interfaces, models, or global state, consider whether the change affects other teams or agents.
+- If a change requires moving responsibilities across modules, document the reason and the new ownership boundaries.
+
 ## Current Priorities
 
 1. Keep the MVP small and verifiable.
@@ -82,10 +92,14 @@ The central reference for these rules is `docs/SECURITY_AND_EFFICIENCY.md`. Futu
 ## Development Rules
 
 - Prefer small, verifiable changes.
+- Prefer small, isolated, well-named files and modules.
 - Avoid large rewrites unless explicitly requested.
+- Avoid monolithic files, hidden dependencies, and tightly coupled feature code.
 - Keep implementation aligned with the existing architecture and naming.
 - Do not silently change architecture, dependencies, or data models. Document meaningful changes in the relevant docs.
 - Do not introduce new state management, storage, networking, AI, or health integration packages without documenting the decision.
+- Do not place business logic directly inside UI widgets unless it is truly trivial.
+- Document new modules, services, models, providers, and dependencies in `docs/ARCHITECTURE.md`.
 - Keep platform-specific code isolated behind services or adapters.
 - Keep AI provider code isolated behind clear provider/service boundaries.
 - Treat health data as sensitive user data. Avoid logging raw health values, API keys, or chat context containing private data.
@@ -103,6 +117,8 @@ The central reference for these rules is `docs/SECURITY_AND_EFFICIENCY.md`. Futu
 - `lib/widgets/` should contain reusable UI components.
 - Cross-platform code should be preferred where practical, with platform-specific details hidden behind services.
 - Avoid coupling UI directly to platform channels, health SDKs, secure storage, or AI provider SDKs.
+- Avoid circular dependencies. Dependencies should generally flow from UI to state/providers to services to models, not back upward.
+- Keep public APIs between modules explicit, typed, and documented when they become shared contracts.
 
 ## Documentation Update Rules
 

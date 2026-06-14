@@ -131,3 +131,39 @@ Status: accepted
 Context: The MVP does not require a project-hosted backend. Health data, API keys, prompts, and chat content are sensitive and should not gain additional exposure by default.
 
 Consequences: Any future backend sync, account system, analytics pipeline, crash reporting payload, or remote processing path involving sensitive data must be opt-in where appropriate, clearly user-visible, and documented in `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, and `docs/SECURITY_AND_EFFICIENCY.md` before implementation.
+
+## 2026-06-14 - Treat Modularity As A First-Class Engineering Constraint
+
+Date: 2026-06-14
+
+Decision: Modularity is a first-class engineering constraint alongside security and efficiency.
+
+Status: accepted
+
+Context: The project will likely be developed by multiple people and AI agents over time. Large files, hidden dependencies, and tightly coupled feature logic would make parallel work risky and slow.
+
+Consequences: Future agents should prefer small, isolated, well-named files and modules. New modules, services, models, providers, dependencies, and shared contracts must be documented in `docs/ARCHITECTURE.md`.
+
+## 2026-06-14 - Split Features Into UI, State, Models, And Services Where Appropriate
+
+Date: 2026-06-14
+
+Decision: Features should be split into UI, state, models, and services where the feature is more than trivial placeholder UI.
+
+Status: accepted
+
+Context: Settings, health integrations, API key storage, health summaries, and AI chat will each need different ownership boundaries for testing, security, performance, and multi-agent development.
+
+Consequences: UI widgets should not own business logic, secure storage, health API calls, network calls, or AI provider behavior. Shared behavior should move into explicit services, providers/state objects, models, or reusable widgets.
+
+## 2026-06-14 - Isolate Platform-Specific Integrations
+
+Date: 2026-06-14
+
+Decision: Platform-specific integrations must be isolated behind services or adapters.
+
+Status: accepted
+
+Context: Apple HealthKit, Google Health Connect, future watch support, widgets, and platform permissions will have platform-specific behavior that should not leak across UI files.
+
+Consequences: Platform-specific code should be contained in dedicated services/adapters with clear interfaces. Screens and widgets should consume platform-neutral state or models wherever practical.

@@ -31,6 +31,19 @@ Feature statuses must be one of: `planned`, `in-progress`, `done`, or `blocked`.
 | Health integrations | Must request the minimum permissions needed for the active feature and avoid continuous background syncing unless documented and user-controlled. |
 | Basic health summary | Must prefer local processing, bounded reads, and cached summaries when data has not changed. |
 
+## Phase 1 Modularity Acceptance Criteria
+
+| Feature | Acceptance Criteria |
+| --- | --- |
+| Flutter app shell | App startup, top-level app configuration, and navigation should remain small and separated from feature logic. |
+| Home screen | Home UI should compose reusable widgets and models instead of owning health reads, prompt construction, storage, or network logic. |
+| Health data screen | Health UI, health service, health permission handling, and health models must be separated before real integration work starts. |
+| AI coach chat screen | Chat UI must be separate from provider-specific OpenAI/Gemini clients, prompt construction, request models, and response parsing. |
+| Settings screen | Settings UI, API key storage service, provider selection state, and validation logic should be separated where appropriate. |
+| OpenAI/Gemini API key storage | Key storage must live behind a dedicated service boundary and should not be implemented directly in widgets. |
+| Health integrations | HealthKit and Health Connect platform logic must be isolated behind services/adapters and must not be scattered through UI files. |
+| Basic health summary | Summary generation should use explicit models and service/provider boundaries so it can be tested without UI. |
+
 ## Phase 2
 
 | Feature | Status | Notes |

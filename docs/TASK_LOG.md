@@ -112,3 +112,33 @@ Follow-up tasks:
 - Define a minimal permission request plan before adding HealthKit or Health Connect integrations.
 - Define the first health summary model so prompts can use compact summaries instead of raw data dumps.
 - Decide logging, analytics, and crash reporting policy before adding any telemetry dependency.
+
+## 2026-06-14 - Modularity Documentation
+
+Date: 2026-06-14
+
+Task summary: Updated project documentation to make modularity a first-class engineering constraint and reviewed the current app structure for architecture hygiene.
+
+Files changed:
+
+- `docs/AGENT.md`
+- `docs/PROJECT_OVERVIEW.md`
+- `docs/ARCHITECTURE.md`
+- `docs/FEATURES.md`
+- `docs/DECISIONS.md`
+- `docs/SECURITY_AND_EFFICIENCY.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Modularity is a first-class engineering constraint alongside security and efficiency.
+- Features should be split into UI, state, models, and services where appropriate.
+- Platform-specific integrations must be isolated behind services or adapters.
+- The current app shell is already modular enough for the next task, so no code refactor was needed.
+
+Follow-up tasks:
+
+- Keep future settings work split between UI, API key storage service, provider selection state, and models where needed.
+- Keep future health work split between UI, health services/adapters, permission handling, and health models.
+- Keep future AI chat work split between UI, prompt construction, provider-specific clients, and response models.
+- Document every new shared module, dependency, and cross-module API in `docs/ARCHITECTURE.md`.
