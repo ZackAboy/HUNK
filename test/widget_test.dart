@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:hunk/app.dart';
@@ -11,7 +12,13 @@ import 'package:hunk/models/ai_model.dart';
 import 'package:hunk/models/ai_chat_message.dart';
 import 'package:hunk/models/ai_provider.dart';
 import 'package:hunk/models/ai_settings.dart';
+import 'package:hunk/models/context_entry.dart';
+import 'package:hunk/models/context_matrix.dart';
+import 'package:hunk/screens/context_web_screen.dart';
 import 'package:hunk/services/ai_chat_service.dart';
+import 'package:hunk/services/context_extraction_service.dart';
+import 'package:hunk/services/context_repository.dart';
+import 'package:hunk/services/context_summary_builder.dart';
 import 'package:hunk/services/gemini_chat_service.dart';
 import 'package:hunk/services/gemini_model_listing_service.dart';
 import 'package:hunk/services/model_listing_service.dart';
@@ -25,6 +32,111 @@ void main() {
         .setMockMethodCallHandler(SystemChannels.platform, null);
   });
 
+  test('context entry serializes and restores metadata', () {
+    final createdAt = DateTime.utc(2026, 6, 15, 12);
+    final updatedAt = DateTime.utc(2026, 6, 15, 13);
+    final entry = ContextEntry(
+      id: 'ctx_1',
+      section: ContextSection.goals,
+      title: 'Primary fitness goal',
+      value: 'Run a half marathon',
+      source: ContextSource.chatExtracted,
+      confidence: 0.7,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      isPinned: true,
+    );
+
+    final restored = ContextEntry.fromJson(entry.toJson());
+
+    expect(restored.id, 'ctx_1');
+    expect(restored.section, ContextSection.goals);
+    expect(restored.source, ContextSource.chatExtracted);
+    expect(restored.confidence, 0.7);
+    expect(restored.createdAt, createdAt);
+    expect(restored.updatedAt, updatedAt);
+    expect(restored.isPinned, isTrue);
+  });
+
+  test('context summary is compact and excludes archived entries', () {
+    final now = DateTime.utc(2026, 6, 15);
+    final summary =
+        const ContextSummaryBuilder(maxEntries: 4, maxCharacters: 1200).build(
+          ContextMatrix(
+            entries: [
+              ContextEntry(
+                id: 'goal',
+                section: ContextSection.goals,
+                title: 'Primary fitness goal',
+                value: 'Run a half marathon',
+                source: ContextSource.manual,
+                createdAt: now,
+                updatedAt: now,
+                isPinned: true,
+              ),
+              ContextEntry(
+                id: 'archived',
+                section: ContextSection.healthConstraints,
+                title: 'Old injury note',
+                value: 'Archived value',
+                source: ContextSource.manual,
+                createdAt: now,
+                updatedAt: now,
+                isArchived: true,
+              ),
+            ],
+          ),
+        );
+
+    expect(summary, contains('APP-STORED USER CONTEXT MATRIX'));
+    expect(summary, contains('Primary fitness goal: Run a half marathon'));
+    expect(summary, contains('END APP-STORED USER CONTEXT MATRIX'));
+    expect(summary, isNot(contains('Archived value')));
+    expect(summary.length, lessThanOrEqualTo(1200));
+  });
+
+  test('context extraction is conservative around manual entries', () {
+    final now = DateTime.utc(2026, 6, 15);
+    final existing = [
+      ContextEntry(
+        id: 'manual_age',
+        section: ContextSection.profile,
+        title: 'Age',
+        value: '34',
+        source: ContextSource.manual,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ];
+
+    final extracted = const ContextExtractionService().extractFromUserMessage(
+      message:
+          "I'm 35 and my goal is to run a marathon. I have dumbbells at home.",
+      existingEntries: existing,
+      now: now,
+    );
+
+    expect(
+      extracted.any(
+        (entry) =>
+            entry.section == ContextSection.profile && entry.title == 'Age',
+      ),
+      isFalse,
+    );
+    expect(
+      extracted.any((entry) => entry.section == ContextSection.goals),
+      isTrue,
+    );
+    expect(
+      extracted.any((entry) => entry.section == ContextSection.equipmentAccess),
+      isTrue,
+    );
+    expect(
+      extracted.every((entry) => entry.source == ContextSource.chatExtracted),
+      isTrue,
+    );
+  });
+
   testWidgets('bottom navigation switches between shell screens', (
     WidgetTester tester,
   ) async {
@@ -33,6 +145,7 @@ void main() {
         settingsStorage: FakeSettingsStorage(),
         modelListingService: FakeModelListingService(),
         chatService: FakeChatService(),
+        contextRepository: FakeContextRepository(),
       ),
     );
 
@@ -211,6 +324,7 @@ void main() {
           settingsStorage: storage,
           modelListingService: FakeModelListingService(),
           chatService: chatService,
+          contextRepository: FakeContextRepository(),
         ),
       );
 
@@ -248,6 +362,7 @@ void main() {
         ),
         modelListingService: FakeModelListingService(),
         chatService: chatService,
+        contextRepository: FakeContextRepository(),
       ),
     );
 
@@ -279,6 +394,7 @@ void main() {
         settingsStorage: FakeSettingsStorage(openAiSelectedModel: 'gpt-5'),
         modelListingService: FakeModelListingService(),
         chatService: chatService,
+        contextRepository: FakeContextRepository(),
       ),
     );
 
@@ -314,6 +430,7 @@ void main() {
         ),
         modelListingService: FakeModelListingService(),
         chatService: chatService,
+        contextRepository: FakeContextRepository(),
       ),
     );
 
@@ -328,6 +445,205 @@ void main() {
 
     expect(find.text('Can I lift today?'), findsOneWidget);
     expect(find.text('OpenAI request failed with status 401.'), findsOneWidget);
+  });
+
+  testWidgets('coach chat renders assistant markdown', (
+    WidgetTester tester,
+  ) async {
+    final chatService = FakeChatService(
+      onSend: (_) async => '## Plan\n\n- **Easy run**\n- `Zone 2`',
+    );
+
+    await tester.pumpWidget(
+      HunkApp(
+        settingsStorage: FakeSettingsStorage(
+          openAiApiKey: 'stored-openai-placeholder',
+          openAiSelectedModel: 'gpt-5',
+        ),
+        modelListingService: FakeModelListingService(),
+        chatService: chatService,
+        contextRepository: FakeContextRepository(),
+      ),
+    );
+
+    await tester.tap(find.text('Coach'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('coach-chat-input')),
+      'Give me a short plan.',
+    );
+    await tester.tap(find.byKey(const ValueKey('coach-chat-send-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MarkdownBody), findsOneWidget);
+    expect(find.text('Plan'), findsOneWidget);
+  });
+
+  testWidgets('coach chat sends compact active context summary', (
+    WidgetTester tester,
+  ) async {
+    final now = DateTime.utc(2026, 6, 15);
+    final contextRepository = FakeContextRepository(
+      ContextMatrix(
+        entries: [
+          ContextEntry(
+            id: 'goal',
+            section: ContextSection.goals,
+            title: 'Primary fitness goal',
+            value: 'Run a half marathon',
+            source: ContextSource.manual,
+            createdAt: now,
+            updatedAt: now,
+            isPinned: true,
+          ),
+          ContextEntry(
+            id: 'old',
+            section: ContextSection.healthConstraints,
+            title: 'Old note',
+            value: 'Archived context should not be sent',
+            source: ContextSource.manual,
+            createdAt: now,
+            updatedAt: now,
+            isArchived: true,
+          ),
+        ],
+      ),
+    );
+    final chatService = FakeChatService();
+
+    await tester.pumpWidget(
+      HunkApp(
+        settingsStorage: FakeSettingsStorage(
+          openAiApiKey: 'stored-openai-placeholder',
+          openAiSelectedModel: 'gpt-5',
+        ),
+        modelListingService: FakeModelListingService(),
+        chatService: chatService,
+        contextRepository: contextRepository,
+      ),
+    );
+
+    await tester.tap(find.text('Coach'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('coach-chat-input')),
+      'What should I focus on?',
+    );
+    await tester.tap(find.byKey(const ValueKey('coach-chat-send-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      chatService.calls.single.contextSummary,
+      contains('Primary fitness goal: Run a half marathon'),
+    );
+    expect(
+      chatService.calls.single.contextSummary,
+      isNot(contains('Archived context should not be sent')),
+    );
+  });
+
+  testWidgets('coach chat opens Context Web from fixed Matrix button', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      HunkApp(
+        settingsStorage: FakeSettingsStorage(
+          openAiApiKey: 'stored-openai-placeholder',
+          openAiSelectedModel: 'gpt-5',
+        ),
+        modelListingService: FakeModelListingService(),
+        chatService: FakeChatService(),
+        contextRepository: FakeContextRepository(),
+      ),
+    );
+
+    await tester.tap(find.text('Coach'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('coach-chat-context-button')),
+      findsOneWidget,
+    );
+    expect(find.text('Matrix'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('coach-chat-context-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Context Web'), findsOneWidget);
+    expect(find.text('Info Matrix'), findsOneWidget);
+  });
+
+  testWidgets('context web renders and archives manual context', (
+    WidgetTester tester,
+  ) async {
+    final repository = FakeContextRepository();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF237A57)),
+          useMaterial3: true,
+        ),
+        home: ContextWebScreen(repository: repository),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Context Web'), findsOneWidget);
+    expect(find.text('Info Matrix'), findsOneWidget);
+    expect(find.text('Complete profile'), findsOneWidget);
+    expect(find.text('Profile'), findsWidgets);
+    expect(find.text('Goals'), findsWidgets);
+    expect(find.text('Nutrition'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('context-web-add-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('context-entry-title-field')),
+      'Age',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('context-entry-value-field')),
+      '34',
+    );
+    await tester.tap(find.byKey(const ValueKey('context-save-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository.matrix.activeEntries.single.title, 'Age');
+    expect(repository.matrix.activeEntries.single.source, ContextSource.manual);
+    expect(find.text('34'), findsOneWidget);
+
+    await tester.ensureVisible(find.byTooltip('Archive').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Archive').first);
+    await tester.pumpAndSettle();
+
+    expect(repository.matrix.activeEntries, isEmpty);
+  });
+
+  testWidgets('context web missing fields fit small iPhone screens', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF237A57)),
+          useMaterial3: true,
+        ),
+        home: ContextWebScreen(repository: FakeContextRepository()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Complete profile'), findsOneWidget);
+    expect(find.text('Age'), findsWidgets);
+    expect(find.text('Primary fitness goal'), findsWidgets);
+    expect(tester.takeException(), isNull);
   });
 
   test(
@@ -446,6 +762,11 @@ void main() {
         expect(body['store'], isFalse);
 
         final input = body['input'] as List;
+        final systemMessage = input.first as Map<String, Object?>;
+        expect(
+          systemMessage['content'],
+          contains('APP-STORED USER CONTEXT MATRIX'),
+        );
         expect(input.last, {'role': 'user', 'content': 'Hello coach'});
 
         return http.Response(
@@ -459,6 +780,7 @@ void main() {
       apiKey: 'test-key',
       modelId: 'gpt-5',
       messages: const [AiChatMessage.user('Hello coach')],
+      contextSummary: 'APP-STORED USER CONTEXT MATRIX\nGoals:\n- Run',
     );
 
     expect(response, 'Hello from OpenAI');
@@ -472,6 +794,13 @@ void main() {
         expect(request.url.queryParameters['key'], 'test-key');
 
         final body = jsonDecode(request.body) as Map<String, Object?>;
+        final systemInstruction =
+            body['systemInstruction'] as Map<String, Object?>;
+        final systemParts = systemInstruction['parts'] as List;
+        expect(
+          (systemParts.first as Map<String, Object?>)['text'],
+          contains('APP-STORED USER CONTEXT MATRIX'),
+        );
         final contents = body['contents'] as List;
         expect(contents.last, {
           'role': 'user',
@@ -501,6 +830,7 @@ void main() {
       apiKey: 'test-key',
       modelId: 'gemini-3-pro',
       messages: const [AiChatMessage.user('Hello coach')],
+      contextSummary: 'APP-STORED USER CONTEXT MATRIX\nGoals:\n- Run',
     );
 
     expect(response, 'Hello from Gemini');
@@ -517,6 +847,7 @@ Future<void> _pumpSettings(
       settingsStorage: storage ?? FakeSettingsStorage(),
       modelListingService: modelService ?? FakeModelListingService(),
       chatService: FakeChatService(),
+      contextRepository: FakeContextRepository(),
     ),
   );
 
@@ -547,12 +878,14 @@ class FakeChatService implements AiChatService {
     required String apiKey,
     required String modelId,
     required List<AiChatMessage> messages,
+    String contextSummary = '',
   }) async {
     final call = FakeChatCall(
       provider: provider,
       apiKey: apiKey,
       modelId: modelId,
       messages: List.of(messages),
+      contextSummary: contextSummary,
     );
     calls.add(call);
 
@@ -566,12 +899,58 @@ class FakeChatCall {
     required this.apiKey,
     required this.modelId,
     required this.messages,
+    required this.contextSummary,
   });
 
   final AiProvider provider;
   final String apiKey;
   final String modelId;
   final List<AiChatMessage> messages;
+  final String contextSummary;
+}
+
+class FakeContextRepository implements ContextRepository {
+  FakeContextRepository([ContextMatrix? matrix])
+    : matrix = matrix ?? ContextMatrix.empty();
+
+  ContextMatrix matrix;
+
+  @override
+  Future<ContextMatrix> loadMatrix() async {
+    return matrix;
+  }
+
+  @override
+  Future<void> saveMatrix(ContextMatrix matrix) async {
+    this.matrix = matrix;
+  }
+
+  @override
+  Future<ContextEntry> saveEntry(ContextEntry entry) async {
+    final entries = [...matrix.entries];
+    final index = entries.indexWhere((item) => item.id == entry.id);
+    if (index == -1) {
+      entries.add(entry);
+    } else {
+      entries[index] = entry;
+    }
+    matrix = ContextMatrix(entries: entries);
+    return entry;
+  }
+
+  @override
+  Future<void> archiveEntry(String entryId) async {
+    final now = DateTime.utc(2026, 6, 15);
+    matrix = ContextMatrix(
+      entries: [
+        for (final entry in matrix.entries)
+          if (entry.id == entryId)
+            entry.copyWith(isArchived: true, updatedAt: now)
+          else
+            entry,
+      ],
+    );
+  }
 }
 
 class FakeModelListingService implements ModelListingService {

@@ -4,13 +4,25 @@ import '../models/ai_chat_message.dart';
 import '../models/ai_provider.dart';
 import '../models/ai_settings.dart';
 import '../services/ai_chat_service.dart';
+import '../services/context_extraction_service.dart';
+import '../services/context_repository.dart';
+import '../services/context_summary_builder.dart';
 import '../services/settings_storage.dart';
 
 class ChatController extends ChangeNotifier {
-  ChatController({required this.storage, required this.chatService});
+  ChatController({
+    required this.storage,
+    required this.chatService,
+    required this.contextRepository,
+    this.contextSummaryBuilder = const ContextSummaryBuilder(),
+    this.contextExtractionService = const ContextExtractionService(),
+  });
 
   final SettingsStorage storage;
   final AiChatService chatService;
+  final ContextRepository contextRepository;
+  final ContextSummaryBuilder contextSummaryBuilder;
+  final ContextExtractionService contextExtractionService;
 
   final List<AiChatMessage> _messages = [];
   bool _isSending = false;
@@ -32,6 +44,7 @@ class ChatController extends ChangeNotifier {
 
     try {
       final settings = await _loadChatSettings();
+      final contextSummary = await _loadContextSummary();
       final userMessage = AiChatMessage.user(trimmed);
       _messages.add(userMessage);
       notifyListeners();
@@ -41,8 +54,10 @@ class ChatController extends ChangeNotifier {
         apiKey: settings.apiKey,
         modelId: settings.modelId,
         messages: _messages,
+        contextSummary: contextSummary,
       );
       _messages.add(AiChatMessage.assistant(response));
+      await _extractContextFrom(trimmed);
     } on _ChatConfigurationException catch (error) {
       _errorMessage = error.message;
     } on AiChatException catch (error) {
@@ -102,6 +117,31 @@ class ChatController extends ChangeNotifier {
       throw _ChatConfigurationException(
         '${provider.label} API key could not be read. Save it again in Settings.',
       );
+    }
+  }
+
+  Future<String> _loadContextSummary() async {
+    try {
+      final matrix = await contextRepository.loadMatrix();
+      return contextSummaryBuilder.build(matrix);
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Future<void> _extractContextFrom(String userMessage) async {
+    try {
+      final matrix = await contextRepository.loadMatrix();
+      final extractedEntries = contextExtractionService.extractFromUserMessage(
+        message: userMessage,
+        existingEntries: matrix.entries,
+      );
+
+      for (final entry in extractedEntries) {
+        await contextRepository.saveEntry(entry);
+      }
+    } catch (_) {
+      // Context extraction must not interrupt the main chat experience.
     }
   }
 }

@@ -5,6 +5,7 @@ import 'screens/health_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/ai_chat_service.dart';
+import 'services/context_repository.dart';
 import 'services/model_listing_service.dart';
 import 'services/provider_ai_chat_service.dart';
 import 'services/settings_storage.dart';
@@ -15,11 +16,13 @@ class HunkApp extends StatelessWidget {
     this.settingsStorage,
     this.modelListingService,
     this.chatService,
+    this.contextRepository,
   });
 
   final SettingsStorage? settingsStorage;
   final ModelListingService? modelListingService;
   final AiChatService? chatService;
+  final ContextRepository? contextRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +37,7 @@ class HunkApp extends StatelessWidget {
         settingsStorage: settingsStorage,
         modelListingService: modelListingService,
         chatService: chatService,
+        contextRepository: contextRepository,
       ),
     );
   }
@@ -45,11 +49,13 @@ class AppShell extends StatefulWidget {
     this.settingsStorage,
     this.modelListingService,
     this.chatService,
+    this.contextRepository,
   });
 
   final SettingsStorage? settingsStorage;
   final ModelListingService? modelListingService;
   final AiChatService? chatService;
+  final ContextRepository? contextRepository;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -60,6 +66,7 @@ class _AppShellState extends State<AppShell> {
   late final SettingsStorage _settingsStorage;
   late final ModelListingService _modelListingService;
   late final AiChatService _chatService;
+  late final ContextRepository _contextRepository;
 
   @override
   void initState() {
@@ -68,6 +75,7 @@ class _AppShellState extends State<AppShell> {
     _modelListingService =
         widget.modelListingService ?? ProviderModelListingService();
     _chatService = widget.chatService ?? ProviderAiChatService();
+    _contextRepository = widget.contextRepository ?? SecureContextRepository();
   }
 
   @override
@@ -92,6 +100,7 @@ class _AppShellState extends State<AppShell> {
         screen: CoachChatScreen(
           settingsStorage: _settingsStorage,
           chatService: _chatService,
+          contextRepository: _contextRepository,
         ),
       ),
       _AppDestination(

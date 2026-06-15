@@ -18,17 +18,20 @@ class ProviderAiChatService implements AiChatService {
     required String apiKey,
     required String modelId,
     required List<AiChatMessage> messages,
+    String contextSummary = '',
   }) {
     return switch (provider) {
       AiProvider.openAi => _openAi.sendMessage(
         apiKey: apiKey,
         modelId: modelId,
         messages: messages,
+        contextSummary: contextSummary,
       ),
       AiProvider.gemini => _gemini.sendMessage(
         apiKey: apiKey,
         modelId: modelId,
         messages: messages,
+        contextSummary: contextSummary,
       ),
     };
   }

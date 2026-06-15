@@ -18,6 +18,7 @@ class OpenAiChatService {
     required String apiKey,
     required String modelId,
     required List<AiChatMessage> messages,
+    String contextSummary = '',
   }) async {
     try {
       final response = await _client
@@ -29,7 +30,10 @@ class OpenAiChatService {
             },
             body: jsonEncode({
               'model': modelId,
-              'input': [_forAppSystemMessage(), ...messages.map(_toInputItem)],
+              'input': [
+                _forAppSystemMessage(contextSummary),
+                ...messages.map(_toInputItem),
+              ],
               'store': false,
               'max_output_tokens': 700,
             }),
@@ -70,12 +74,14 @@ class OpenAiChatService {
     }
   }
 
-  Map<String, String> _forAppSystemMessage() {
-    return const {
-      'role': 'developer',
-      'content':
-          'You are a concise AI fitness coach. Give practical, safe, text-only guidance. No health data integrations are connected yet.',
-    };
+  Map<String, String> _forAppSystemMessage(String contextSummary) {
+    final trimmedSummary = contextSummary.trim();
+    final content = [
+      'You are a concise AI fitness coach. Give practical, safe, text-only guidance. No health service integrations are connected yet.',
+      if (trimmedSummary.isNotEmpty) trimmedSummary,
+    ].join('\n\n');
+
+    return {'role': 'developer', 'content': content};
   }
 
   Map<String, String> _toInputItem(AiChatMessage message) {

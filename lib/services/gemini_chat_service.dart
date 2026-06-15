@@ -18,6 +18,7 @@ class GeminiChatService {
     required String apiKey,
     required String modelId,
     required List<AiChatMessage> messages,
+    String contextSummary = '',
   }) async {
     try {
       final response = await _client
@@ -27,10 +28,7 @@ class GeminiChatService {
             body: jsonEncode({
               'systemInstruction': {
                 'parts': [
-                  {
-                    'text':
-                        'You are a concise AI fitness coach. Give practical, safe, text-only guidance. No health data integrations are connected yet.',
-                  },
+                  {'text': _systemInstruction(contextSummary)},
                 ],
               },
               'contents': [for (final message in messages) _toContent(message)],
@@ -65,6 +63,14 @@ class GeminiChatService {
         'Gemini request failed. Check the saved API key and model.',
       );
     }
+  }
+
+  String _systemInstruction(String contextSummary) {
+    final trimmedSummary = contextSummary.trim();
+    return [
+      'You are a concise AI fitness coach. Give practical, safe, text-only guidance. No health service integrations are connected yet.',
+      if (trimmedSummary.isNotEmpty) trimmedSummary,
+    ].join('\n\n');
   }
 
   Uri _generateContentUri({required String apiKey, required String modelId}) {

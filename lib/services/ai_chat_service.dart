@@ -7,6 +7,7 @@ abstract class AiChatService {
     required String apiKey,
     required String modelId,
     required List<AiChatMessage> messages,
+    String contextSummary = '',
   });
 }
 

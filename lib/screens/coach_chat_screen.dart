@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
 import '../models/ai_chat_message.dart';
 import '../providers/chat_controller.dart';
 import '../services/ai_chat_service.dart';
+import '../services/context_repository.dart';
 import '../services/provider_ai_chat_service.dart';
 import '../services/settings_storage.dart';
+import 'context_web_screen.dart';
 
 class CoachChatScreen extends StatefulWidget {
-  const CoachChatScreen({super.key, this.settingsStorage, this.chatService});
+  const CoachChatScreen({
+    super.key,
+    this.settingsStorage,
+    this.chatService,
+    this.contextRepository,
+  });
 
   final SettingsStorage? settingsStorage;
   final AiChatService? chatService;
+  final ContextRepository? contextRepository;
 
   @override
   State<CoachChatScreen> createState() => _CoachChatScreenState();
@@ -18,15 +27,18 @@ class CoachChatScreen extends StatefulWidget {
 
 class _CoachChatScreenState extends State<CoachChatScreen> {
   late final ChatController _chatController;
+  late final ContextRepository _contextRepository;
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _contextRepository = widget.contextRepository ?? SecureContextRepository();
     _chatController = ChatController(
       storage: widget.settingsStorage ?? SecureSettingsStorage(),
       chatService: widget.chatService ?? ProviderAiChatService(),
+      contextRepository: _contextRepository,
     )..addListener(_scrollToBottom);
   }
 
@@ -47,6 +59,7 @@ class _CoachChatScreenState extends State<CoachChatScreen> {
       builder: (context, _) {
         return Column(
           children: [
+            _ChatHeader(onOpenContext: _openContextWeb),
             Expanded(
               child: _MessageList(
                 chatController: _chatController,
@@ -75,6 +88,16 @@ class _CoachChatScreenState extends State<CoachChatScreen> {
     }
   }
 
+  Future<void> _openContextWeb() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) {
+          return ContextWebScreen(repository: _contextRepository);
+        },
+      ),
+    );
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) {
@@ -87,6 +110,45 @@ class _CoachChatScreenState extends State<CoachChatScreen> {
         curve: Curves.easeOut,
       );
     });
+  }
+}
+
+class _ChatHeader extends StatelessWidget {
+  const _ChatHeader({required this.onOpenContext});
+
+  final VoidCallback onOpenContext;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 360;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Coach chat',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          if (isCompact)
+            IconButton.filledTonal(
+              key: const ValueKey('coach-chat-context-button'),
+              onPressed: onOpenContext,
+              icon: const Icon(Icons.hub_outlined),
+              tooltip: 'Open Context Web',
+            )
+          else
+            FilledButton.tonalIcon(
+              key: const ValueKey('coach-chat-context-button'),
+              onPressed: onOpenContext,
+              icon: const Icon(Icons.hub_outlined),
+              label: const Text('Matrix'),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -157,18 +219,64 @@ class _ChatBubble extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.all(12),
-              child: Text(
-                message.text,
-                softWrap: true,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: isUser
-                      ? colorScheme.onPrimaryContainer
-                      : colorScheme.onSurfaceVariant,
-                ),
-              ),
+              child: isUser
+                  ? Text(
+                      message.text,
+                      softWrap: true,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                    )
+                  : _AssistantMarkdown(text: message.text),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AssistantMarkdown extends StatelessWidget {
+  const _AssistantMarkdown({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final baseStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+    );
+
+    return MarkdownBody(
+      data: text,
+      selectable: true,
+      softLineBreak: true,
+      onTapLink: (_, _, _) {},
+      imageBuilder: (_, _, alt) {
+        return Text(
+          alt == null || alt.isEmpty ? '[image omitted]' : '[image: $alt]',
+          style: baseStyle,
+        );
+      },
+      styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+        p: baseStyle,
+        listBullet: baseStyle,
+        a: baseStyle?.copyWith(
+          color: colorScheme.primary,
+          decoration: TextDecoration.underline,
+        ),
+        code: baseStyle?.copyWith(
+          fontFamily: 'monospace',
+          backgroundColor: colorScheme.surface,
+        ),
+        codeblockDecoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        codeblockPadding: const EdgeInsets.all(8),
       ),
     );
   }

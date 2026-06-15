@@ -33,6 +33,12 @@ flutter doctor
 flutter pub get
 ```
 
+Current app dependencies of note:
+
+- `flutter_secure_storage` for local API keys and the initial Context Web JSON document.
+- `http` for explicit OpenAI/Gemini model listing and chat calls.
+- `flutter_markdown_plus` for assistant Markdown rendering in chat.
+
 ## Run The App
 
 ```sh
@@ -111,6 +117,7 @@ Current setup notes:
 - No biometric-gated key access is configured yet.
 - No app backend receives API keys.
 - Model list calls require network access and valid provider API keys, but tests use fake model listing services and do not need real keys.
+- Context Web entries are currently stored locally through the same secure-storage package as a JSON document. Do not put API keys or secrets in the Context Matrix.
 - iOS secure-storage behavior should be verified on a simulator and physical device before release.
 
 ## Documentation Setup

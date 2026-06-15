@@ -9,13 +9,15 @@ Feature statuses must be one of: `planned`, `in-progress`, `done`, or `blocked`.
 | Flutter app shell | done | Material 3 shell with bottom navigation for the four MVP screens. |
 | Home screen | done | Placeholder entry point for future summary and coaching prompts. |
 | Health data screen | done | Placeholder screen only; real HealthKit and Health Connect data reads are still planned. |
-| AI coach chat screen | done | Basic text-only chat UI sends manual prompts to the active provider/model and displays assistant responses. No health summary, tools, streaming, or persistence yet. |
+| AI coach chat screen | done | Basic text-only chat UI sends manual prompts to the active provider/model and displays assistant responses. Assistant messages render Markdown, and a fixed Matrix button opens Context Web. No health summary, tools, streaming, or chat history persistence yet. |
+| Context Web / Info Matrix | done | Initial local context model, secure local persistence, polished network-chart Context Web screen, manual add/edit/archive, missing-field prompts, compact prompt summary, and conservative chat extraction are implemented. No health/weather/workout imports yet. |
 | Settings screen | done | Provider-focused AI setup, secure API key entry/removal, saved-key status, model fetching, and provider-specific model selection are implemented. |
 | Store OpenAI API key locally | done | Uses secure local storage; key is not displayed after saving and can be cleared. |
 | Store Gemini API key locally | done | Uses secure local storage; key is not displayed after saving and can be cleared. |
 | Select OpenAI model | done | Fetches likely text/tool-capable OpenAI model candidates with the saved key and stores the selected model locally. |
 | Select Gemini model | done | Fetches likely text/tool-capable Gemini model candidates with the saved key and stores the selected model locally. |
 | Send manual chat prompt to selected AI provider/model | done | Uses the current Settings provider/key/model flow for manual testing with OpenAI or Gemini. |
+| Chat prompt includes Context Web summary | done | Active Context Matrix entries are summarized compactly and included in provider-specific system instructions. Archived entries are excluded. |
 | Basic Apple HealthKit integration | planned | iOS permissions must be minimal, metric-specific, and explained to users before access. |
 | Basic Google Health Connect integration | planned | Android permissions must be minimal, metric-specific, and explained to users before access. |
 | Basic health summary | planned | Summary should be compact, locally generated where practical, and avoid retaining raw data unless needed. |
@@ -28,11 +30,14 @@ Feature statuses must be one of: `planned`, `in-progress`, `done`, or `blocked`.
 | Flutter app shell | Must not introduce background work, network calls, analytics, or permissions without a documented feature need. |
 | Home screen | Must avoid showing sensitive health data until permission state, data freshness, and user intent are clear. |
 | Health data screen | Must explain requested health permissions in user-facing language before real access is requested. Reads must be scoped by metric type and date range. |
-| AI coach chat screen | Must make AI-provider transmission explicit. Current chat sends only user-entered text and in-memory chat history to the selected provider; no health data is included yet. Future health prompts should include compact summaries rather than raw histories. |
+| AI coach chat screen | Must make AI-provider transmission explicit. Current chat sends user-entered text, in-memory chat history, and a bounded active Context Web summary to the selected provider; no platform health data is included yet. Future health prompts should include compact summaries rather than raw histories. |
+| Assistant Markdown rendering | Uses `flutter_markdown_plus` for common Markdown in assistant messages. Link taps are disabled for now, and images are omitted rather than fetched or rendered. Long content must wrap on small phone screens. |
+| Context Web / Info Matrix | Stores sensitive coaching context locally through secure storage. It must not store API keys or secrets, must exclude archived entries from prompts, must avoid raw chat dumps, and must let users view, correct, manually confirm, or archive stored context. Visual polish must remain lightweight and must not add background work or heavy animation dependencies. |
 | Settings screen | Exposes provider choice, focused API key setup for the active provider only, provider-specific key removal, model refresh, and local model selection. |
 | OpenAI/Gemini API key storage | Uses `flutter_secure_storage`, provides a clear delete path, and keeps tests on a fake storage boundary with placeholder values only. Keys must not be logged or included in crash reports. |
 | OpenAI/Gemini model listing | Uses explicit user/API-key-driven calls only. Filters out obvious non-text, embedding, media, realtime, and specialized model families. No polling, background fetch, analytics, backend sync, capability probing loops, or raw response logging. |
 | OpenAI/Gemini chat calls | Uses explicit user-triggered sends only. Uses existing secure API key storage, selected provider, and selected model. No prompt/response logging, background sends, retries, streaming, tools, MCP, analytics, backend sync, or chat persistence. |
+| Chat prompt context | Uses compact active Context Web summaries with clear boundaries. Do not send archived/deleted entries, raw health histories, unlimited chat history, API keys, or unrelated sensitive details. |
 | Health integrations | Must request the minimum permissions needed for the active feature and avoid continuous background syncing unless documented and user-controlled. |
 | Basic health summary | Must prefer local processing, bounded reads, and cached summaries when data has not changed. |
 
@@ -44,6 +49,7 @@ Feature statuses must be one of: `planned`, `in-progress`, `done`, or `blocked`.
 | Home screen | Home UI should compose reusable widgets and models instead of owning health reads, prompt construction, storage, or network logic. |
 | Health data screen | Health UI, health service, health permission handling, and health models must be separated before real integration work starts. |
 | AI coach chat screen | Chat UI is separated from `ChatController`, `AiChatService`, provider-specific OpenAI/Gemini clients, request mapping, and response parsing. |
+| Context Web / Info Matrix | Context UI, graph visual components, state, model, persistence, summary building, extraction, and future import source interfaces are separated across widget, screen, provider, model, and service files. |
 | Settings screen | Settings UI, focused provider setup widget, settings controller, API key storage service, model listing services, and settings models are separated. Long model names must fit small phone screens without horizontal overflow. |
 | OpenAI/Gemini API key storage | Key storage lives behind `SettingsStorage` / `SecureSettingsStorage` and is not implemented directly in widgets. |
 | OpenAI/Gemini model listing | Provider-specific model listing lives behind `ModelListingService`, `OpenAiModelListingService`, and `GeminiModelListingService`; no network logic is in UI. |

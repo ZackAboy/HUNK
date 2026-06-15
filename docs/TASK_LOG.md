@@ -300,3 +300,110 @@ Follow-up tasks:
 - Add compact health summary prompt construction before turning this into the real fitness coach flow.
 - Revisit model capability filtering and request parameters before adding tools, MCP behavior, or streaming.
 - Define chat retention/deletion policy before adding persistent chat history.
+
+## 2026-06-15 - Chat Markdown And Context Web
+
+Date: 2026-06-15
+
+Task summary: Added Markdown rendering for assistant chat messages and implemented the first local Context Web / Info Matrix system for durable coaching context.
+
+Files changed:
+
+- `lib/app.dart`
+- `lib/models/context_entry.dart`
+- `lib/models/context_matrix.dart`
+- `lib/providers/chat_controller.dart`
+- `lib/providers/context_controller.dart`
+- `lib/screens/coach_chat_screen.dart`
+- `lib/screens/context_web_screen.dart`
+- `lib/services/ai_chat_service.dart`
+- `lib/services/context_extraction_service.dart`
+- `lib/services/context_import_sources.dart`
+- `lib/services/context_repository.dart`
+- `lib/services/context_summary_builder.dart`
+- `lib/services/gemini_chat_service.dart`
+- `lib/services/openai_chat_service.dart`
+- `lib/services/provider_ai_chat_service.dart`
+- `pubspec.yaml`
+- `pubspec.lock`
+- `test/widget_test.dart`
+- `docs/ARCHITECTURE.md`
+- `docs/FEATURES.md`
+- `docs/DECISIONS.md`
+- `docs/SECURITY_AND_EFFICIENCY.md`
+- `docs/SETUP.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Add `flutter_markdown_plus` for assistant Markdown rendering because AI responses commonly use Markdown and the earlier `flutter_markdown` package is discontinued.
+- Store the initial Context Matrix locally as secure-storage JSON behind `ContextRepository` instead of adding a database package.
+- Keep Context Web UI, state, models, persistence, prompt-summary building, extraction, and future import interfaces separated.
+- Include only a compact active Context Web summary in chat prompts; archived entries are excluded.
+- Use conservative local rule-based chat extraction first and mark extracted entries as `chat_extracted` with confidence metadata.
+- Do not add health integrations, permissions, background jobs, MCP/tools, streaming, cloud sync, analytics, crash reporting, or backend calls.
+
+Follow-up tasks:
+
+- Manually test Context Web add/edit/archive and Markdown rendering on small iPhone and Android screens.
+- Define a user-visible deletion/export policy before expanding persistent context storage.
+- Add user review/approval controls before any future AI-based context extraction.
+- Plug future HealthKit, Health Connect, weather, and workout imports into the placeholder source interfaces only after permission and retention rules are documented.
+- Revisit context summary limits once real health summaries and longer conversations are added.
+
+## 2026-06-15 - Context Web UI Polish And Chat Matrix Button
+
+Date: 2026-06-15
+
+Task summary: Added a fixed Matrix access button to Coach chat and redesigned Context Web with a light network-chart visual layer, central user-context hub, radial section nodes, child entry/missing-field nodes, connection lines, metadata styling, missing-field chips, and lightweight entrance animations.
+
+Files changed:
+
+- `lib/screens/coach_chat_screen.dart`
+- `lib/screens/context_web_screen.dart`
+- `lib/widgets/context_web_graph.dart`
+- `test/widget_test.dart`
+- `docs/ARCHITECTURE.md`
+- `docs/FEATURES.md`
+- `docs/DECISIONS.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Use a fixed header Matrix button instead of an overflow menu so Context Web remains visible while chatting without covering the composer.
+- Keep Context Web storage, models, controller behavior, prompt summaries, and extraction unchanged.
+- Use built-in Flutter widgets, `CustomPainter`, and finite animations instead of adding a graph or animation dependency.
+- Keep graph visuals in `lib/widgets/context_web_graph.dart` so `ContextWebScreen` remains responsible for state wiring and dialogs.
+
+Follow-up tasks:
+
+- Manually inspect the redesigned Context Web on real small iPhone and Android devices.
+- Consider adding optional search/filtering once context entries grow.
+- Revisit pan/zoom only if the simple clustered layout stops scaling.
+
+## 2026-06-15 - Context Web Network Chart Refinement
+
+Date: 2026-06-15
+
+Task summary: Refined the Context Web visual direction toward the provided network-chart references with a light chart canvas, gray connection lines, circular colored nodes, and section child nodes for entries and missing fields.
+
+Files changed:
+
+- `lib/screens/context_web_screen.dart`
+- `lib/widgets/context_web_graph.dart`
+- `test/widget_test.dart`
+- `docs/ARCHITECTURE.md`
+- `docs/FEATURES.md`
+- `docs/DECISIONS.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Keep the custom Flutter painter approach instead of adding a graph dependency.
+- Use deterministic radial layout rather than force-directed simulation so tests and low-end device performance stay stable.
+- Keep editing and archive controls in expandable detail panels while the primary visual layer acts like a network chart.
+
+Follow-up tasks:
+
+- Manually inspect node spacing with real user context data.
+- Consider optional pan/zoom only if dense context makes the radial chart too crowded.

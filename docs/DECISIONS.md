@@ -251,3 +251,63 @@ Status: accepted
 Context: The app needs a small manual test path for the selected provider/API key/model flow before health summaries, tools, MCP, streaming, or persistent chat memory are introduced. The existing settings storage is already the source of truth for provider, saved-key status, and selected model.
 
 Consequences: Chat UI reads provider/key/model through `SettingsStorage` via `ChatController`. Provider-specific request mapping and response parsing live behind `AiChatService`, `ProviderAiChatService`, `OpenAiChatService`, and `GeminiChatService`. OpenAI uses the Responses API with `store: false`; Gemini uses `generateContent`. Chat messages remain in memory only for the current screen session. No new dependency, health integration, background task, backend sync, analytics, crash reporting, tool/MCP behavior, streaming, or long-term memory was added.
+
+## 2026-06-15 - Use flutter_markdown_plus For Assistant Markdown
+
+Date: 2026-06-15
+
+Decision: Add `flutter_markdown_plus` for rendering assistant Markdown in chat bubbles.
+
+Status: accepted
+
+Context: AI providers commonly return Markdown for headings, lists, emphasis, inline code, and code blocks. Hand-rolling a Markdown renderer would be brittle. The initially attempted `flutter_markdown` package was marked discontinued by pub, so the lightweight replacement package was chosen instead.
+
+Consequences: Assistant messages render with `MarkdownBody` using the app theme. Link taps are intentionally no-op for now, and images are rendered as omitted text. No URL launcher, web view, external browsing behavior, network image loading, streaming, tools, or chat persistence was added.
+
+## 2026-06-15 - Store Context Web Locally In Secure Storage For The Initial MVP
+
+Date: 2026-06-15
+
+Decision: Persist the Context Web / Info Matrix locally as a JSON document behind `ContextRepository` / `SecureContextRepository`, using the existing `flutter_secure_storage` dependency.
+
+Status: accepted
+
+Context: Context entries can include sensitive personal, health, fitness, preference, goal, and environment information. The current MVP does not need a database package, server backend, cloud sync, or large raw health datasets.
+
+Consequences: Context storage stays local-first and small. The Context Matrix must not store API keys or secrets. Malformed stored data falls back to an empty matrix instead of crashing. A future migration to a database, encrypted file store, backend sync, or export/import format requires a documented decision.
+
+## 2026-06-15 - Include Compact Context Web Summaries In Chat Prompts
+
+Date: 2026-06-15
+
+Decision: Include a bounded, structured summary of active Context Web entries in provider-specific system instructions for chat.
+
+Status: accepted
+
+Context: The AI fitness coach needs durable user context to give useful coaching, but raw history dumps increase privacy exposure, token usage, latency, and cost.
+
+Consequences: `ContextSummaryBuilder` creates a compact prompt block with clear boundaries. Archived entries are excluded. Provider services receive only the summary string, not the full repository. Future health summaries should follow the same compact-summary pattern.
+
+## 2026-06-15 - Use Conservative Rule-Based Context Extraction First
+
+Date: 2026-06-15
+
+Decision: Use conservative local rule-based extraction from user chat messages for the first context auto-population pass.
+
+Status: accepted
+
+Context: AI-based extraction would require additional provider calls, cost, latency, and privacy exposure. The first version only needs safe candidate capture for durable coaching facts the user clearly states.
+
+Consequences: Extracted entries are marked `chat_extracted`, include confidence metadata, and do not overwrite manual or pinned entries. Extraction runs after successful chat sends and must not interrupt chat if it fails. Future AI extraction must be optional/guarded, user-visible where appropriate, and documented before implementation.
+
+## 2026-06-15 - Use Lightweight Flutter UI For Context Web Polish
+
+Date: 2026-06-15
+
+Decision: Implement the polished Context Web / Info Matrix UI with built-in Flutter widgets, `CustomPainter`, and finite implicit animations instead of adding a graph or animation package.
+
+Status: accepted
+
+Context: The app needs a richer web-like experience, but the first version should stay maintainable, testable, and efficient on small phones. A freeform graph engine or heavy animation dependency would add complexity before the context product model is stable.
+
+Consequences: Context Web uses a light network-chart canvas with a central user-context hub, radial section nodes, child entry/missing-field nodes, painted connection lines, entrance animations, expandable sections, and visual metadata chips. Animations are finite and respect reduced-animation settings. The data model, storage, prompt summary, and extraction behavior did not change. Future force-directed layout, pan/zoom, or graph package behavior should be documented before implementation.
