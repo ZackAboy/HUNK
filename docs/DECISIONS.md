@@ -310,4 +310,40 @@ Status: accepted
 
 Context: The app needs a richer web-like experience, but the first version should stay maintainable, testable, and efficient on small phones. A freeform graph engine or heavy animation dependency would add complexity before the context product model is stable.
 
-Consequences: Context Web uses a light network-chart canvas with a central user-context hub, radial section nodes, child entry/missing-field nodes, painted connection lines, entrance animations, expandable sections, and visual metadata chips. Animations are finite and respect reduced-animation settings. The data model, storage, prompt summary, and extraction behavior did not change. Future force-directed layout, pan/zoom, or graph package behavior should be documented before implementation.
+Consequences: Context Web uses a light network-chart canvas with a central user-context hub, radial section nodes, child entry/missing-field nodes, painted connection lines, entrance animations, expandable sections, and visual metadata chips. Animations are finite and respect reduced-animation settings. The data model, storage, prompt summary, and extraction behavior did not change. Future force-directed layout or graph package behavior should be documented before implementation.
+
+## 2026-06-15 - Simulate 3D Context Matrix With Flutter Primitives
+
+Date: 2026-06-15
+
+Decision: Upgrade Context Web / Info Matrix into an interactive 3D-feeling matrix universe using regular Flutter primitives instead of adding a heavy 3D/game engine or graph package.
+
+Status: accepted
+
+Context: The product goal is an Apple Watch-style, living context universe with pan/zoom, tap-to-focus, depth, glow, and fluid section details. The task does not require true 3D rendering, and the app must stay lightweight, maintainable, and smooth on iPhone-sized devices.
+
+Consequences: The UI uses `InteractiveViewer`, `TransformationController`, `Stack`, `Transform`, `CustomPainter`, finite `AnimationController`s, scale, opacity, shadows, gradients, and bounded virtual-canvas sizing. Tapping a section centers and focuses it, shows nearby depth shifts, expands child entry/missing nodes, and opens the focused detail panel. There is no new dependency, no game engine, no health integration, no cloud sync, no backend, and no background animation loop. The 3D effect remains simulated rather than true 3D; if future requirements need real 3D physics or very large graph layouts, that should be documented as a new dependency decision.
+
+## 2026-06-15 - Keep Context Updates App-Controlled Before MCP
+
+Date: 2026-06-15
+
+Decision: Keep Context Matrix updates app-controlled with local validation and shared provider-agnostic prompt context instead of adding MCP/tool-calling.
+
+Status: accepted
+
+Context: The app currently supports OpenAI and Gemini through plain text API calls and has no implemented MCP/tool-calling path. The Context Matrix needs model-driven behavior, but provider compatibility, privacy, and validation are more important than giving models direct write access.
+
+Consequences: Chat sends include a shared Context Matrix summary before provider-specific requests. After a successful chat turn, the app runs conservative local extraction and validates candidate context updates before saving. The context model now supports dynamic nodes/sub-nodes, lifespan, status, confirmation, sensitivity, priority, and expiry metadata. A defensive JSON suggestion parser exists for future AI-assisted extraction, but parsed suggestions still require app-side validation. Future MCP/tool-calling support may produce structured actions, but the app must remain the authority for context mutation.
+
+## 2026-06-15 - Use Fullscreen Interactive-Only Matrix UI
+
+Date: 2026-06-15
+
+Decision: Make the Context Matrix screen a fullscreen interactive graph by default, with no visible counters, list panels, legends, or raw metadata on the main screen.
+
+Status: accepted
+
+Context: The product direction is an Apple Watch-style interactive context universe rather than an admin dashboard. Users should navigate semantic nodes and open management details only when needed.
+
+Consequences: The main Context Matrix screen shows only the graph, semantic node labels, subtle close/add/zoom controls, missing-basic nodes, and animated connections. Detailed metadata, confidence, lifespan, sensitivity, confirmation state, edit/archive/delete/confirm/reject, and add-sub-node actions live in modal management sheets. The UI remains implemented with Flutter primitives and no heavy 3D/game dependency.

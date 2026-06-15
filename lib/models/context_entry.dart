@@ -45,17 +45,27 @@ extension ContextSectionInfo on ContextSection {
     };
   }
 
+  String get matrixLabel {
+    return switch (this) {
+      ContextSection.profile => 'Body',
+      ContextSection.goals => 'Goals',
+      ContextSection.preferences => 'Preferences',
+      ContextSection.equipmentAccess => 'Equipment',
+      ContextSection.healthConstraints => 'Health',
+      ContextSection.currentState => 'Today',
+      ContextSection.trainingHistory => 'Training',
+      ContextSection.nutritionContext => 'Nutrition',
+      ContextSection.environment => 'Environment',
+      ContextSection.personalityMatrix => 'Personality',
+      ContextSection.otherNotes => 'Memory',
+    };
+  }
+
   List<String> get recommendedTitles {
     return switch (this) {
-      ContextSection.profile => [
-        'Age',
-        'Gender',
-        'Height',
-        'Weight',
-        'Location/timezone',
-      ],
+      ContextSection.profile => ['Age', 'Gender', 'Height', 'Weight'],
       ContextSection.goals => [
-        'Primary fitness goal',
+        'Primary goal',
         'Secondary goals',
         'Long-term goal',
         'Target weight/body composition',
@@ -63,13 +73,14 @@ extension ContextSectionInfo on ContextSection {
         'Strength goals',
       ],
       ContextSection.preferences => [
+        'Preferred coaching style',
         'Food preferences',
         'Workout preferences',
-        'Coaching style',
-        'Schedule preferences',
+        'Schedule availability',
         'Exercise likes/dislikes',
       ],
       ContextSection.equipmentAccess => [
+        'Equipment/access',
         'Gym access',
         'Home equipment',
         'Wearables',
@@ -77,6 +88,7 @@ extension ContextSectionInfo on ContextSection {
         'Available machines/exercises',
       ],
       ContextSection.healthConstraints => [
+        'Injuries or constraints',
         'Injuries',
         'Pain history',
         'Medical conditions',
@@ -92,6 +104,8 @@ extension ContextSectionInfo on ContextSection {
         'Hunger/stress/mood',
       ],
       ContextSection.trainingHistory => [
+        'Training experience level',
+        'Current activity baseline',
         'Past workouts',
         'Recent runs',
         'Recent lifts',
@@ -129,15 +143,24 @@ extension ContextSectionInfo on ContextSection {
   }
 }
 
-enum ContextSource { manual, chatExtracted, futureHealthImport, systemDefault }
+enum ContextSource {
+  manual,
+  chatExtracted,
+  userConfirmed,
+  futureHealthImport,
+  futureWeatherImport,
+  systemDefault,
+}
 
 extension ContextSourceInfo on ContextSource {
   String get storageValue {
     return switch (this) {
       ContextSource.manual => 'manual',
       ContextSource.chatExtracted => 'chat_extracted',
+      ContextSource.userConfirmed => 'user_confirmed',
       ContextSource.futureHealthImport => 'future_health_import',
-      ContextSource.systemDefault => 'system/default',
+      ContextSource.futureWeatherImport => 'future_weather_import',
+      ContextSource.systemDefault => 'system_default',
     };
   }
 
@@ -145,15 +168,139 @@ extension ContextSourceInfo on ContextSource {
     return switch (this) {
       ContextSource.manual => 'manual',
       ContextSource.chatExtracted => 'chat extracted',
+      ContextSource.userConfirmed => 'user confirmed',
       ContextSource.futureHealthImport => 'future health import',
-      ContextSource.systemDefault => 'system/default',
+      ContextSource.futureWeatherImport => 'future weather import',
+      ContextSource.systemDefault => 'system default',
     };
   }
 
   static ContextSource fromStorageValue(String? value) {
+    if (value == 'system/default') {
+      return ContextSource.systemDefault;
+    }
+
     return ContextSource.values.firstWhere(
       (source) => source.storageValue == value,
       orElse: () => ContextSource.manual,
+    );
+  }
+}
+
+enum ContextLifespan { temporary, session, longTerm, permanent }
+
+extension ContextLifespanInfo on ContextLifespan {
+  String get storageValue {
+    return switch (this) {
+      ContextLifespan.temporary => 'temporary',
+      ContextLifespan.session => 'session',
+      ContextLifespan.longTerm => 'long_term',
+      ContextLifespan.permanent => 'permanent',
+    };
+  }
+
+  String get label {
+    return switch (this) {
+      ContextLifespan.temporary => 'temporary',
+      ContextLifespan.session => 'session',
+      ContextLifespan.longTerm => 'long term',
+      ContextLifespan.permanent => 'permanent',
+    };
+  }
+
+  static ContextLifespan fromStorageValue(String? value) {
+    return ContextLifespan.values.firstWhere(
+      (lifespan) => lifespan.storageValue == value,
+      orElse: () => ContextLifespan.longTerm,
+    );
+  }
+}
+
+enum ContextStatus { active, archived, deleted }
+
+extension ContextStatusInfo on ContextStatus {
+  String get storageValue {
+    return switch (this) {
+      ContextStatus.active => 'active',
+      ContextStatus.archived => 'archived',
+      ContextStatus.deleted => 'deleted',
+    };
+  }
+
+  static ContextStatus fromStorageValue(
+    String? value, {
+    bool archived = false,
+  }) {
+    if (archived) {
+      return ContextStatus.archived;
+    }
+
+    return ContextStatus.values.firstWhere(
+      (status) => status.storageValue == value,
+      orElse: () => ContextStatus.active,
+    );
+  }
+}
+
+enum ContextConfirmationState { unconfirmed, confirmed, rejected }
+
+extension ContextConfirmationStateInfo on ContextConfirmationState {
+  String get storageValue {
+    return switch (this) {
+      ContextConfirmationState.unconfirmed => 'unconfirmed',
+      ContextConfirmationState.confirmed => 'confirmed',
+      ContextConfirmationState.rejected => 'rejected',
+    };
+  }
+
+  String get label {
+    return switch (this) {
+      ContextConfirmationState.unconfirmed => 'unconfirmed',
+      ContextConfirmationState.confirmed => 'confirmed',
+      ContextConfirmationState.rejected => 'rejected',
+    };
+  }
+
+  static ContextConfirmationState fromStorageValue(
+    String? value, {
+    bool pinned = false,
+  }) {
+    if (pinned) {
+      return ContextConfirmationState.confirmed;
+    }
+
+    return ContextConfirmationState.values.firstWhere(
+      (state) => state.storageValue == value,
+      orElse: () => ContextConfirmationState.unconfirmed,
+    );
+  }
+}
+
+enum ContextSensitivity { normal, personal, health, sensitive }
+
+extension ContextSensitivityInfo on ContextSensitivity {
+  String get storageValue {
+    return switch (this) {
+      ContextSensitivity.normal => 'normal',
+      ContextSensitivity.personal => 'personal',
+      ContextSensitivity.health => 'health',
+      ContextSensitivity.sensitive => 'sensitive',
+    };
+  }
+
+  String get label {
+    return switch (this) {
+      ContextSensitivity.normal => 'normal',
+      ContextSensitivity.personal => 'personal',
+      ContextSensitivity.health => 'health',
+      ContextSensitivity.sensitive => 'sensitive',
+    };
+  }
+
+  static ContextSensitivity fromStorageValue(String? value) {
+    return ContextSensitivity.values.firstWhere(
+      (sensitivity) => sensitivity.storageValue == value,
+      orElse: () => ContextSensitivity.normal,
     );
   }
 }
@@ -167,50 +314,134 @@ class ContextEntry {
     required this.source,
     required this.createdAt,
     required this.updatedAt,
+    this.node,
+    this.parentId,
+    this.lifespan = ContextLifespan.longTerm,
+    ContextStatus status = ContextStatus.active,
+    ContextConfirmationState confirmationState =
+        ContextConfirmationState.unconfirmed,
+    this.sensitivity = ContextSensitivity.normal,
+    this.priority = 0.5,
     this.confidence,
+    this.lastUsedAt,
+    this.expiresAt,
     this.isPinned = false,
-    this.isArchived = false,
-  });
+    bool isArchived = false,
+  }) : status = isArchived ? ContextStatus.archived : status,
+       confirmationState = isPinned
+           ? ContextConfirmationState.confirmed
+           : confirmationState;
 
   factory ContextEntry.fromJson(Map<String, Object?> json) {
+    final pinned = json['isPinned'] as bool? ?? false;
+    final archived = json['isArchived'] as bool? ?? false;
+    final source = ContextSourceInfo.fromStorageValue(
+      json['source'] as String?,
+    );
+    final section = ContextSectionInfo.fromStorageValue(
+      json['section'] as String?,
+    );
+    final confirmationState = ContextConfirmationStateInfo.fromStorageValue(
+      json['confirmationState'] as String?,
+      pinned: pinned,
+    );
+
     return ContextEntry(
       id: json['id'] as String? ?? '',
-      section: ContextSectionInfo.fromStorageValue(json['section'] as String?),
+      section: section,
+      node: _trimmedOrNull(json['node']) ?? section.matrixLabel,
+      parentId: _trimmedOrNull(json['parentId']),
       title: json['title'] as String? ?? '',
       value: json['value'] as String? ?? '',
-      source: ContextSourceInfo.fromStorageValue(json['source'] as String?),
+      source: source,
+      lifespan: ContextLifespanInfo.fromStorageValue(
+        json['lifespan'] as String?,
+      ),
+      status: ContextStatusInfo.fromStorageValue(
+        json['status'] as String?,
+        archived: archived,
+      ),
+      confirmationState: confirmationState,
+      sensitivity: ContextSensitivityInfo.fromStorageValue(
+        json['sensitivity'] as String?,
+      ),
+      priority: (json['priority'] as num?)?.toDouble() ?? 0.5,
       confidence: (json['confidence'] as num?)?.toDouble(),
       createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
       updatedAt: _parseDate(json['updatedAt']) ?? DateTime.now(),
-      isPinned: json['isPinned'] as bool? ?? false,
-      isArchived: json['isArchived'] as bool? ?? false,
+      lastUsedAt: _parseDate(json['lastUsedAt']),
+      expiresAt: _parseDate(json['expiresAt']),
+      isPinned:
+          pinned || confirmationState == ContextConfirmationState.confirmed,
     );
   }
 
   final String id;
   final ContextSection section;
+  final String? node;
+  final String? parentId;
   final String title;
   final String value;
   final ContextSource source;
+  final ContextLifespan lifespan;
+  final ContextStatus status;
+  final ContextConfirmationState confirmationState;
+  final ContextSensitivity sensitivity;
+  final double priority;
   final double? confidence;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime? lastUsedAt;
+  final DateTime? expiresAt;
   final bool isPinned;
-  final bool isArchived;
 
-  bool get isActive => !isArchived;
+  String get nodeLabel {
+    final trimmed = node?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) {
+      return trimmed;
+    }
+    return section.matrixLabel;
+  }
+
+  bool get isArchived => status == ContextStatus.archived;
+  bool get isDeleted => status == ContextStatus.deleted;
+  bool get isRejected => confirmationState == ContextConfirmationState.rejected;
+  bool get isConfirmed =>
+      confirmationState == ContextConfirmationState.confirmed;
+
+  bool get isActive => isActiveAt(DateTime.now());
+
+  bool isActiveAt(DateTime now) {
+    return status == ContextStatus.active &&
+        confirmationState != ContextConfirmationState.rejected &&
+        !_isExpiredAt(now);
+  }
+
+  bool _isExpiredAt(DateTime now) {
+    final expiry = expiresAt;
+    return expiry != null && !expiry.isAfter(now);
+  }
 
   Map<String, Object?> toJson() {
     return {
       'id': id,
       'section': section.storageValue,
+      'node': nodeLabel,
+      'parentId': parentId,
       'title': title,
       'value': value,
       'source': source.storageValue,
+      'lifespan': lifespan.storageValue,
+      'status': status.storageValue,
+      'confirmationState': confirmationState.storageValue,
+      'sensitivity': sensitivity.storageValue,
+      'priority': priority,
       'confidence': confidence,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
-      'isPinned': isPinned,
+      'lastUsedAt': lastUsedAt?.toIso8601String(),
+      'expiresAt': expiresAt?.toIso8601String(),
+      'isPinned': isPinned || isConfirmed,
       'isArchived': isArchived,
     };
   }
@@ -218,28 +449,56 @@ class ContextEntry {
   ContextEntry copyWith({
     String? id,
     ContextSection? section,
+    Object? node = _unchanged,
+    Object? parentId = _unchanged,
     String? title,
     String? value,
     ContextSource? source,
+    ContextLifespan? lifespan,
+    ContextStatus? status,
+    ContextConfirmationState? confirmationState,
+    ContextSensitivity? sensitivity,
+    double? priority,
     Object? confidence = _unchanged,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Object? lastUsedAt = _unchanged,
+    Object? expiresAt = _unchanged,
     bool? isPinned,
     bool? isArchived,
   }) {
+    final nextStatus = isArchived == true
+        ? ContextStatus.archived
+        : status ?? this.status;
+    final nextConfirmation = isPinned == true
+        ? ContextConfirmationState.confirmed
+        : confirmationState ?? this.confirmationState;
+
     return ContextEntry(
       id: id ?? this.id,
       section: section ?? this.section,
+      node: node == _unchanged ? this.node : node as String?,
+      parentId: parentId == _unchanged ? this.parentId : parentId as String?,
       title: title ?? this.title,
       value: value ?? this.value,
       source: source ?? this.source,
+      lifespan: lifespan ?? this.lifespan,
+      status: nextStatus,
+      confirmationState: nextConfirmation,
+      sensitivity: sensitivity ?? this.sensitivity,
+      priority: priority ?? this.priority,
       confidence: confidence == _unchanged
           ? this.confidence
           : confidence as double?,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      lastUsedAt: lastUsedAt == _unchanged
+          ? this.lastUsedAt
+          : lastUsedAt as DateTime?,
+      expiresAt: expiresAt == _unchanged
+          ? this.expiresAt
+          : expiresAt as DateTime?,
       isPinned: isPinned ?? this.isPinned,
-      isArchived: isArchived ?? this.isArchived,
     );
   }
 
@@ -249,6 +508,14 @@ class ContextEntry {
     }
 
     return DateTime.tryParse(value);
+  }
+
+  static String? _trimmedOrNull(Object? value) {
+    if (value is! String) {
+      return null;
+    }
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 }
 

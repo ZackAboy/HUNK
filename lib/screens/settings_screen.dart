@@ -5,6 +5,7 @@ import '../models/ai_provider.dart';
 import '../providers/settings_controller.dart';
 import '../services/model_listing_service.dart';
 import '../services/settings_storage.dart';
+import '../widgets/context_matrix_theme.dart';
 import '../widgets/settings_provider_setup.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -50,20 +51,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final settings = _controller.settings;
         final activeProvider = settings.activeProvider;
 
+        final textTheme = Theme.of(context).textTheme;
+
         return ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 96),
           children: [
-            Text(
-              'AI provider settings',
-              style: Theme.of(context).textTheme.headlineSmall,
+            Row(
+              children: [
+                const _SettingsPulseIcon(),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'AI provider settings',
+                    style: textTheme.headlineSmall?.copyWith(
+                      color: ContextMatrixStyle.text,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
               'Choose one provider, save its API key locally, then select an available model.',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: textTheme.bodyMedium?.copyWith(
+                color: ContextMatrixStyle.mutedText,
+              ),
             ),
             const SizedBox(height: 24),
-            const Text('Active provider'),
+            Text(
+              'Active provider',
+              style: textTheme.titleSmall?.copyWith(
+                color: ContextMatrixStyle.text,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 8),
             SegmentedButton<AiProvider>(
               segments: const [
@@ -169,5 +190,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _SettingsPulseIcon extends StatelessWidget {
+  const _SettingsPulseIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: ContextMatrixStyle.violet.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: ContextMatrixStyle.violet.withValues(alpha: 0.4),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ContextMatrixStyle.violet.withValues(alpha: 0.17),
+            blurRadius: 18,
+          ),
+        ],
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(10),
+        child: Icon(Icons.tune_outlined, color: ContextMatrixStyle.violet),
+      ),
+    );
   }
 }

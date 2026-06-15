@@ -25,7 +25,13 @@ class ContextMatrix {
   final List<ContextEntry> entries;
 
   List<ContextEntry> get activeEntries {
-    return entries.where((entry) => entry.isActive).toList(growable: false);
+    return activeEntriesAt(DateTime.now());
+  }
+
+  List<ContextEntry> activeEntriesAt(DateTime now) {
+    return entries
+        .where((entry) => entry.isActiveAt(now))
+        .toList(growable: false);
   }
 
   Map<String, Object?> toJson() {

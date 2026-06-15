@@ -27,6 +27,7 @@ class ChatController extends ChangeNotifier {
   final List<AiChatMessage> _messages = [];
   bool _isSending = false;
   String? _errorMessage;
+  int? _lastMissingBasicsHintMessageCount;
 
   List<AiChatMessage> get messages => List.unmodifiable(_messages);
   bool get isSending => _isSending;
@@ -123,7 +124,16 @@ class ChatController extends ChangeNotifier {
   Future<String> _loadContextSummary() async {
     try {
       final matrix = await contextRepository.loadMatrix();
-      return contextSummaryBuilder.build(matrix);
+      final includeMissingBasics = _shouldIncludeMissingBasics();
+      final summary = contextSummaryBuilder.build(
+        matrix,
+        includeMissingBasics: includeMissingBasics,
+      );
+      if (includeMissingBasics &&
+          summary.contains('Missing basics to ask naturally')) {
+        _lastMissingBasicsHintMessageCount = _messages.length;
+      }
+      return summary;
     } catch (_) {
       return '';
     }
@@ -143,6 +153,14 @@ class ChatController extends ChangeNotifier {
     } catch (_) {
       // Context extraction must not interrupt the main chat experience.
     }
+  }
+
+  bool _shouldIncludeMissingBasics() {
+    final lastHintAt = _lastMissingBasicsHintMessageCount;
+    if (lastHintAt == null) {
+      return true;
+    }
+    return _messages.length - lastHintAt >= 4;
   }
 }
 

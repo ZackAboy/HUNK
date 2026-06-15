@@ -84,11 +84,11 @@ Current implementation notes:
 - Store Context Web entries only behind `ContextRepository` / `SecureContextRepository` for the current MVP.
 - Do not store API keys, access tokens, provider secrets, raw provider responses, or hidden identifiers in the Context Matrix.
 - Store durable user-stated coaching facts only. Do not persist every chat line.
-- Keep manual and pinned entries higher authority than chat-extracted entries.
-- Do not silently overwrite manual or pinned entries through extraction or future imports.
-- Mark AI/rule-extracted context with `chat_extracted` and confidence metadata.
-- Let users view, edit, correct, confirm, and archive/remove entries.
-- Exclude archived entries from active UI counts and AI prompt summaries.
+- Keep manual, user-confirmed, confirmed, and permanent entries higher authority than chat-extracted entries.
+- Do not silently overwrite manual, user-confirmed, confirmed, or permanent entries through extraction or future imports.
+- Mark AI/rule-extracted context with `chat_extracted`, confirmation state, lifespan, sensitivity, priority, and confidence metadata where available.
+- Let users view, edit, correct, confirm, reject, archive, and delete entries.
+- Exclude archived, deleted, rejected, and expired entries from active UI and AI prompt summaries.
 - Keep future health, weather, and workout imports behind explicit source interfaces with no background importing unless separately documented.
 - Do not log Context Matrix values, prompt summaries, extraction candidates, or archive/delete actions with sensitive content.
 
@@ -97,8 +97,8 @@ Current implementation notes:
 - Prefer compact health summaries in prompts instead of raw data dumps.
 - Include only the health context needed to answer the user's current request.
 - Avoid repeatedly sending large health histories to AI providers.
-- Include Context Web data through a bounded summary with clear start/end boundaries, not as unlimited raw entries or chat history.
-- Exclude archived/deleted Context Web entries from prompts.
+- Include Context Matrix data through a bounded summary with clear start/end boundaries, not as unlimited raw entries or chat history.
+- Exclude archived/deleted/rejected Context Matrix entries and expired temporary/session context from prompts.
 - Do not include API keys, secrets, raw provider responses, or unrelated sensitive notes in prompt context.
 - Make provider transmission explicit in the architecture and user-facing settings.
 - Treat prompts and responses as sensitive because they may contain health context.
@@ -109,9 +109,10 @@ Current implementation notes:
 - Basic Coach chat sends user-entered text, the current in-memory chat history, and a bounded active Context Web summary. No platform health data is included yet.
 - Chat uses the active provider, saved API key, and selected model from `SettingsStorage`; it does not maintain a second provider/model source of truth.
 - Chat messages are not persisted locally and are not written to logs, analytics, crash reports, or docs.
-- Durable user-stated context can be saved separately in the local Context Matrix through manual entry or conservative rule-based extraction.
+- Durable or temporary user-stated context can be saved separately in the local Context Matrix through manual entry or conservative app-controlled rule-based extraction.
+- Missing basic coaching info is detected locally and can be included in the shared prompt summary so the model asks naturally for a few missing basics at a time.
 - OpenAI chat calls set `store: false` in the Responses API request.
-- No tools, MCP behavior, streaming, background sends, automatic retries, or long-term memory are implemented.
+- No tools, MCP behavior, streaming, background sends, automatic retries, or provider-direct context mutation are implemented.
 
 ## Network Calls
 

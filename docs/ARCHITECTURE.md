@@ -4,7 +4,7 @@ This file is the living index/database of the codebase. Update it whenever files
 
 ## Current State
 
-The Flutter project has been initialized for iOS and Android. The app currently has a Material 3 shell with bottom navigation and four MVP screens:
+The Flutter project has been initialized for iOS and Android. The app currently has a Matrix-themed dark Material 3 shell with bottom navigation and four MVP screens:
 
 - Home
 - Health
@@ -13,15 +13,15 @@ The Flutter project has been initialized for iOS and Android. The app currently 
 
 No real health integrations have been implemented yet.
 
-The Coach screen now supports basic text-only AI chat for manual testing. It reads the active provider, saved API key, and selected model from the existing settings storage boundary, builds a compact Context Web summary from local user context, then sends the in-memory conversation to the selected provider through provider-specific chat services. It does not include health integrations, tools, MCP behavior, streaming, background work, cloud sync, or persistent chat history.
+The Coach screen now supports basic text-only AI chat for manual testing. It reads the active provider, saved API key, and selected model from the existing settings storage boundary, builds a compact shared Context Matrix summary from local user context, then sends the in-memory conversation to the selected provider through provider-specific chat services. It does not include health integrations, tools, MCP behavior, streaming, background work, cloud sync, or persistent chat history.
 
-Assistant chat messages render common Markdown with `flutter_markdown_plus`. Links are styled but do not open external URLs yet, and images are omitted in text form. The Coach screen also has a fixed Matrix button in the chat header so users can open Context Web without using an overflow menu or blocking the composer.
+Assistant chat messages render common Markdown with `flutter_markdown_plus`. Links are styled but do not open external URLs yet, and images are omitted in text form. The Coach screen also has a fixed premium Matrix button in the chat header so users can open Context Web without using an overflow menu or blocking the composer.
 
-The Context Web / Info Matrix feature now stores user-specific coaching context locally. It supports fixed sections, manual entries, conservative rule-based chat extraction, metadata, archive/remove behavior, a compact prompt summary for chat, and a polished light network-chart UI with a central user-context hub, radial section nodes, child entry/missing-field nodes, connection-line painting, entrance animations, and expandable detail panels. Future health, weather, and workout import sources are represented only as interfaces; no real health integration, permissions, background import, or backend sync exists yet.
+The Context Web / Info Matrix feature now stores user-specific coaching context locally. It supports fixed app-controlled sections, dynamic node labels, optional parent IDs for sub-nodes, manual entries, conservative rule-based chat extraction, a defensive JSON suggestion parser for future AI-assisted extraction, lifespan/status/confirmation/sensitivity metadata, archive/delete behavior, missing-basics detection, a compact provider-agnostic prompt summary for chat, and a fullscreen dark 3D-feeling matrix universe UI. The main Matrix screen shows only the interactive graph and subtle controls; management details and metadata appear in modal sheets. Future health, weather, and workout import sources are represented only as interfaces; no real health integration, permissions, background import, MCP/tool-calling, or backend sync exists yet.
 
 The Settings screen now supports local AI provider configuration. Users can choose OpenAI or Google Gemini as the active provider, enter only that provider's API key, see whether the selected provider key is saved without revealing key values, remove only the selected provider key, fetch likely text/tool-capable provider model candidates, and store a provider-specific selected model.
 
-Current modularity assessment: the app shell, settings feature, and basic chat feature are separated well enough for the next task. `main.dart`, `app.dart`, individual screen files, settings/chat controllers, storage service, model listing services, chat services, models, and reusable widgets are clear.
+Current modularity assessment: the app shell, shared Matrix-inspired theme, settings feature, and basic chat feature are separated well enough for the next task. `main.dart`, `app.dart`, individual screen files, settings/chat controllers, storage service, model listing services, chat services, models, and reusable widgets are clear.
 
 ## Intended Structure
 
@@ -46,6 +46,7 @@ lib/
     gemini_chat_service.dart
     context_repository.dart
     context_summary_builder.dart
+    context_missing_basics_detector.dart
     context_extraction_service.dart
     context_import_sources.dart
   models/
@@ -59,9 +60,15 @@ lib/
     settings_controller.dart
     chat_controller.dart
     context_controller.dart
+  theme/
+    hunk_theme.dart
   widgets/
     placeholder_panel.dart
     settings_provider_setup.dart
+    context_matrix_detail_panel.dart
+    context_matrix_models.dart
+    context_matrix_theme.dart
+    context_matrix_universe.dart
     context_web_graph.dart
 ```
 
@@ -76,11 +83,11 @@ lib/
 | `android/` | Generated Android Flutter runner and Gradle project. Auto backup is disabled in the main manifest for secure local storage. No Health Connect setup yet. | active |
 | `ios/` | Generated iOS Flutter runner and Xcode project. No HealthKit setup yet. | active |
 | `lib/main.dart` | Minimal app entry point that initializes Flutter bindings and runs `HunkApp`. | active |
-| `lib/app.dart` | Top-level Material 3 app configuration, app shell, bottom navigation, and settings/model-listing/chat/context repository injection seams for tests. Owns one settings storage instance shared by Settings and Coach and one context repository instance shared by Coach and Context Web. | active |
+| `lib/app.dart` | Top-level app configuration, Matrix-themed shell, bottom navigation, and settings/model-listing/chat/context repository injection seams for tests. Owns one settings storage instance shared by Settings and Coach and one context repository instance shared by Coach and Context Web. | active |
 | `lib/screens/home_screen.dart` | Placeholder Home screen for future summaries and coaching prompts. | active |
 | `lib/screens/health_screen.dart` | Placeholder Health screen for future HealthKit and Health Connect data. | active |
-| `lib/screens/coach_chat_screen.dart` | Basic text-only Coach chat UI with message list, Markdown assistant rendering, composer, loading state, fixed Matrix button for Context Web navigation, and user-facing configuration/API errors. Reads state through `ChatController`; does not call provider APIs directly. | active |
-| `lib/screens/context_web_screen.dart` | Context Web / Info Matrix screen. Owns controller wiring, expanded-section state, local chart theme, manual add/edit dialog, archive action, and graph widget composition. | active |
+| `lib/screens/coach_chat_screen.dart` | Basic text-only Coach chat UI with message list, Markdown assistant rendering, composer, loading state, premium fixed Matrix button for Context Web navigation, and user-facing configuration/API errors. Reads state through `ChatController`; does not call provider APIs directly. | active |
+| `lib/screens/context_web_screen.dart` | Fullscreen Context Web / Info Matrix screen. Owns controller wiring, expanded-section state, dark local matrix theme, manual add/edit dialog, modal management sheets, archive/delete/confirm/reject actions, and graph widget composition. | active |
 | `lib/screens/settings_screen.dart` | Settings UI for active AI provider selection, clipboard paste, focused provider key setup, model refresh, and provider-specific model selection. Does not directly call secure storage or provider model APIs. | active |
 | `lib/services/settings_storage.dart` | `SettingsStorage` interface and `SecureSettingsStorage` implementation using `flutter_secure_storage`. Owns active provider, local API key persistence, saved-key detection, selected model storage, and provider-specific key/model removal. | active |
 | `lib/services/model_listing_service.dart` | `ModelListingService` interface, provider router, and sanitized model listing exception type. | active |
@@ -90,25 +97,31 @@ lib/
 | `lib/services/provider_ai_chat_service.dart` | Provider router that maps `AiProvider` to the OpenAI or Gemini chat service. | active |
 | `lib/services/openai_chat_service.dart` | OpenAI text chat client using `POST https://api.openai.com/v1/responses` with bearer auth, `store: false`, no tools, no streaming, timeout handling, and defensive text response parsing. | active |
 | `lib/services/gemini_chat_service.dart` | Gemini text chat client using `POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key=...`, no tools, no streaming, timeout handling, and defensive candidate text parsing. | active |
-| `lib/services/context_repository.dart` | `ContextRepository` interface and `SecureContextRepository` implementation. Persists the local Context Matrix as one JSON document in `flutter_secure_storage`; malformed stored JSON falls back to an empty matrix. | active |
-| `lib/services/context_summary_builder.dart` | Builds a bounded, structured Context Web prompt summary from active entries only. Excludes archived entries and limits prompt size. | active |
-| `lib/services/context_extraction_service.dart` | Conservative rule-based extraction from user chat messages into candidate context entries. Marks entries as `chat_extracted`, adds confidence metadata, and avoids overwriting manual or pinned entries. | active |
+| `lib/services/context_repository.dart` | `ContextRepository` interface and `SecureContextRepository` implementation. Persists the local Context Matrix as one JSON document in `flutter_secure_storage`; malformed stored JSON falls back to an empty matrix. Supports save, archive, and deleted-status removal for individual entries. | active |
+| `lib/services/context_summary_builder.dart` | Builds a bounded, structured Context Matrix prompt summary from active entries only. Excludes archived, deleted, rejected, and expired entries; includes missing-basics guidance when not recently suppressed by chat state. | active |
+| `lib/services/context_missing_basics_detector.dart` | Detects missing required/recommended basics such as age, height, weight, primary goal, training experience, equipment/access, injuries/constraints, schedule, activity baseline, and coaching style. | active |
+| `lib/services/context_extraction_service.dart` | Conservative app-controlled rule-based extraction from user chat messages into candidate context entries plus a defensive JSON suggestion parser for future AI-assisted extraction. Marks entries as `chat_extracted`, adds lifespan/sensitivity/priority/confidence metadata, and avoids overwriting manual, confirmed, or permanent entries. | active |
 | `lib/services/context_import_sources.dart` | Placeholder interfaces for future health, weather, and workout context import sources. No implementations, permissions, background work, or platform integrations exist yet. | active |
 | `lib/models/ai_provider.dart` | AI provider enum and display/storage value helpers for OpenAI and Google Gemini. | active |
 | `lib/models/ai_settings.dart` | Non-secret settings state model containing active provider, saved-key booleans, and provider-specific selected model IDs. Does not contain API key values. | active |
 | `lib/models/ai_model.dart` | Non-secret model metadata used by Settings model dropdowns: provider, model ID, and display name. | active |
 | `lib/models/ai_chat_message.dart` | In-memory text chat message model with user/assistant role and message text. Not persisted. | active |
-| `lib/models/context_entry.dart` | Context Web entry model, fixed section enum, source enum, metadata, JSON serialization, active/archive state, and recommended section fields. Does not store secrets. | active |
-| `lib/models/context_matrix.dart` | Context Web container model with active-entry filtering and JSON serialization. | active |
+| `lib/models/context_entry.dart` | Context Matrix entry model, fixed section enum, dynamic node label, optional parent ID, source/lifespan/status/confirmation/sensitivity enums, priority/confidence metadata, timestamps, JSON serialization, and active/archive/delete/reject/expiry state. Does not store secrets. | active |
+| `lib/models/context_matrix.dart` | Context Matrix container model with active-entry filtering by time/status/confirmation/expiry and JSON serialization. | active |
 | `lib/providers/settings_controller.dart` | ChangeNotifier-based settings state controller that coordinates UI state, `SettingsStorage`, model listing, in-memory model ID/name cache, key removal, and selected model persistence. | active |
-| `lib/providers/chat_controller.dart` | ChangeNotifier-based chat state controller that validates active provider/key/model through `SettingsStorage`, builds Context Web prompt summaries through `ContextSummaryBuilder`, keeps in-memory chat messages, calls `AiChatService`, and runs non-blocking-safe conservative context extraction after successful chat sends. | active |
-| `lib/providers/context_controller.dart` | ChangeNotifier-based Context Web state controller. Loads the matrix, exposes active entries and missing recommended fields, saves manual entries, and archives entries through `ContextRepository`. | active |
+| `lib/providers/chat_controller.dart` | ChangeNotifier-based chat state controller that validates active provider/key/model through `SettingsStorage`, builds shared Context Matrix prompt summaries through `ContextSummaryBuilder`, suppresses repeated missing-basics hints for a few turns, keeps in-memory chat messages, calls `AiChatService`, and runs non-blocking-safe conservative context extraction after successful chat sends. | active |
+| `lib/providers/context_controller.dart` | ChangeNotifier-based Context Web state controller. Loads the matrix, exposes active entries and missing basics, saves manual entries, archives entries, marks entries deleted, and confirms/rejects extracted entries through `ContextRepository`. | active |
+| `lib/theme/hunk_theme.dart` | Shared dark Matrix-inspired Material theme for the app shell, navigation, inputs, buttons, panels, snack bars, and common text colors. Reuses `ContextMatrixStyle` so non-Matrix screens match the Matrix screen palette. | active |
 | `lib/services/` | External boundaries such as settings storage, future health data access, AI provider calls, and platform adapters. | active |
 | `lib/models/` | Structured models such as AI settings, future health summaries, chat messages, provider configuration, and check-ins. | active |
 | `lib/providers/` | State management objects such as `SettingsController`; future provider/state objects should live here when needed. | active |
-| `lib/widgets/placeholder_panel.dart` | Reusable simple panel used by placeholder screens. | active |
+| `lib/widgets/placeholder_panel.dart` | Reusable Matrix-styled panel used by placeholder screens. | active |
 | `lib/widgets/settings_provider_setup.dart` | Provider-focused Settings UI panel for missing-key and saved-key states, paste/save actions, small-screen-safe model dropdown labels, model refresh, and destructive key removal styling. | active |
-| `lib/widgets/context_web_graph.dart` | Reusable Context Web visual layer with a light network-chart canvas, central hub node, radial section nodes, child entry/missing-field nodes, connection-line `CustomPainter`, source/confirmation metadata chips, missing-field chips, and expandable detail panels. Contains no persistence or business logic. | active |
+| `lib/widgets/context_matrix_models.dart` | Small UI-only data models shared by the matrix graph, universe, and detail panel. | active |
+| `lib/widgets/context_matrix_theme.dart` | Matrix-specific color, icon, section-label, and panel styling helpers. Uses cool neon colors and reserves warm warning colors for missing/destructive states. | active |
+| `lib/widgets/context_matrix_universe.dart` | Interactive 3D-feeling matrix universe visual layer. Uses `InteractiveViewer`, `TransformationController`, `CustomPainter`, `Transform`, scale/opacity/depth effects, and finite entrance/focus animations. Contains no persistence or business logic. | active |
+| `lib/widgets/context_matrix_detail_panel.dart` | Modal focused-section management panel. Shows entries, source/lifespan/sensitivity/confirmation metadata, confidence when present, missing-field add chips, and edit/archive/remove/confirm/reject/add-sub-node controls. Contains no persistence or business logic. | active |
+| `lib/widgets/context_web_graph.dart` | Reusable fullscreen Context Matrix graph composition layer. Owns focused-section UI state and composes only `ContextMatrixUniverse`; no counters, lists, legends, or permanent detail panels are visible by default. Contains no persistence or business logic. | active |
 | `test/widget_test.dart` | Widget and service tests for bottom navigation, provider-focused key fields, paste behavior, saved-key state, provider-specific removal, model dropdown layout, model selection, chat UI behavior, chat validation errors, chat request mapping, and model-list filtering using fake storage/services or fake HTTP clients. | active |
 | `docs/AGENT.md` | First-read operating guide for future Codex agents. | active |
 | `docs/PROJECT_OVERVIEW.md` | Product premise, MVP boundaries, platforms, and initial integrations. | active |
@@ -144,6 +157,7 @@ main.dart
         -> services/context_summary_builder.dart
           -> models/context_matrix.dart
           -> models/context_entry.dart
+          -> services/context_missing_basics_detector.dart
         -> services/context_extraction_service.dart
           -> models/context_entry.dart
         -> services/ai_chat_service.dart
@@ -161,10 +175,19 @@ main.dart
     -> screens/context_web_screen.dart
       -> providers/context_controller.dart
         -> services/context_repository.dart
+        -> services/context_missing_basics_detector.dart
         -> models/context_matrix.dart
         -> models/context_entry.dart
       -> widgets/context_web_graph.dart
         -> models/context_entry.dart
+        -> widgets/context_matrix_models.dart
+        -> widgets/context_matrix_theme.dart
+        -> widgets/context_matrix_universe.dart
+          -> widgets/context_matrix_models.dart
+          -> widgets/context_matrix_theme.dart
+        -> widgets/context_matrix_detail_panel.dart
+          -> widgets/context_matrix_models.dart
+          -> widgets/context_matrix_theme.dart
     -> screens/settings_screen.dart
       -> providers/settings_controller.dart
         -> services/settings_storage.dart
@@ -198,7 +221,9 @@ test/widget_test.dart
   -> services/context_repository.dart
   -> services/context_summary_builder.dart
   -> services/context_extraction_service.dart
+  -> services/context_missing_basics_detector.dart
   -> screens/context_web_screen.dart
+  -> widgets/context_matrix_models.dart
   -> models/context_entry.dart
   -> models/context_matrix.dart
 
@@ -340,7 +365,8 @@ Coach UI
   -> ContextRepository interface
   -> active Context Matrix entries
   -> ContextSummaryBuilder
-  -> compact context summary
+  -> ContextMissingBasicsDetector
+  -> compact provider-agnostic context summary
   -> AiChatService interface
   -> ProviderAiChatService
   -> OpenAiChatService or GeminiChatService
@@ -359,7 +385,7 @@ Coach UI
 User chat message
   -> ChatController after successful send
   -> ContextExtractionService
-  -> conservative chat_extracted context candidates
+  -> validated chat_extracted context candidates
   -> ContextRepository
   -> local Context Matrix
 
@@ -381,21 +407,39 @@ Chat flow:
 1. Coach UI keeps only the current in-memory message list and composer input.
 2. `ChatController` reloads `AiSettings` from `SettingsStorage` for each send so it uses the current active provider and selected model.
 3. `ChatController` reads the saved API key through `SettingsStorage` only after confirming a key is saved and a model is selected.
-4. `ChatController` loads the local Context Matrix from `ContextRepository` and uses `ContextSummaryBuilder` to build a compact active-context summary. Archived entries are excluded.
+4. `ChatController` loads the local Context Matrix from `ContextRepository` and uses `ContextSummaryBuilder` to build a compact active-context summary before any provider-specific API call. Archived, deleted, rejected, and expired entries are excluded.
 5. `ProviderAiChatService` routes the request to `OpenAiChatService` or `GeminiChatService`.
 6. `OpenAiChatService` sends the text-only conversation and compact context summary to OpenAI's Responses API with `store: false`, no tools, no streaming, and a bounded output token setting.
 7. `GeminiChatService` sends the text-only conversation and compact context summary to Gemini `generateContent` with no tools, no streaming, and a bounded output token setting.
 8. Provider responses are parsed into assistant text and stored only in the current in-memory `ChatController` message list.
-9. After a successful chat send, `ContextExtractionService` attempts conservative rule-based extraction from the user's message and saves durable candidate entries as `chat_extracted`. Extraction errors are swallowed so chat is not interrupted.
-10. Widget and service tests use fake storage, fake repositories, fake chat services, or fake HTTP clients so no real keys or real network calls are used during tests.
+9. After a successful chat send, `ContextExtractionService` attempts conservative app-side rule-based extraction from the user's message and saves validated candidate entries as `chat_extracted`. Extraction errors are swallowed so chat is not interrupted.
+10. Missing required basics are detected by `ContextMissingBasicsDetector` and included in the shared context summary when not recently requested. The assistant can ask for a few missing basics naturally without blocking chat.
+11. Widget and service tests use fake storage, fake repositories, fake chat services, or fake HTTP clients so no real keys or real network calls are used during tests.
 
 Context Web flow:
 
 1. The user opens Context Web from the fixed Matrix button in the Coach chat header.
-2. `ContextWebScreen` uses `ContextController` to load active and archived entries through `ContextRepository`.
-3. The screen passes section data into `ContextWebGraph`, which renders a light network-chart layout with a central hub, radial section nodes, child entry/missing-field nodes, connection lines, entrance animations, expandable section details, source metadata, and confirmation status.
-4. Manual saves are marked `manual`; edited entries become manual corrections. Archived entries remain stored but are excluded from active UI counts and chat prompt summaries.
-5. `SecureContextRepository` persists the matrix locally as one secure-storage JSON document. It must not store API keys or other secrets.
+2. `ContextWebScreen` uses `ContextController` to load active, archived, and deleted entries through `ContextRepository`.
+3. The screen passes section data into `ContextWebGraph`, which owns focused-section UI state and composes only the interactive universe. No counters, raw metadata, list panels, or admin panels are visible by default.
+4. `ContextMatrixUniverse` renders a central `Core / You` hub and surrounding semantic nodes such as Body, Goals, Training, Nutrition, Equipment, Health, Recovery, Preferences, Environment, Personality, Today, and Memory. It uses `InteractiveViewer` for pan/zoom, `TransformationController` for tap-to-center focus, a procedural infinite-feeling viewport backdrop, perspective-ish transforms, scale, opacity, glow, and connection-line painting for a 3D-feeling network without a game engine.
+5. Tapping a section node focuses and centers it, then shows only that section's child nodes. Tapping another section collapses the previous section's children before showing the newly selected section's children. Tapping an already-focused section or long-pressing a section opens a modal management sheet. Tapping a missing node opens the add dialog with a prefilled title; tapping an entry node opens edit.
+6. `ContextMatrixDetailPanel` is shown only in the modal management sheet. It shows active entries, source/lifespan/sensitivity/confirmation metadata, confidence when present, missing-field chips, and edit/archive/delete/confirm/reject/add-sub-node controls.
+7. Manual confirmed saves are marked `user_confirmed`; edited entries become app-controlled corrections. Archived and deleted entries remain in the local JSON with status metadata but are excluded from active UI, prompt summaries, and future context injection.
+8. `SecureContextRepository` persists the matrix locally as one secure-storage JSON document. It must not store API keys or other secrets.
+
+Context Web performance notes:
+
+- The matrix uses regular Flutter primitives only: `InteractiveViewer`, `Stack`, `Transform`, finite `AnimationController`s, `CustomPainter`, and lightweight shadows/glows.
+- No heavy 3D engine, game package, background worker, polling loop, or health import is used.
+- Animations are finite and respect reduced-motion settings where practical; there is no perpetual ticker in the matrix.
+- The graph canvas is bounded and sized for phone/tablet layouts to avoid huge offscreen surfaces, while the background is a viewport-painted repeating star/grid field that parallaxes with pan/zoom so users do not see hard canvas edges.
+
+Current Context Web UI limitations:
+
+- The 3D effect and infinite background are simulated with 2D transforms, procedural painting, depth styling, and parallax rather than true 3D rendering or an unbounded world.
+- Child nodes are hidden by default, capped for the explicitly expanded section, and collapsed when another parent node is selected to keep the graph readable and performant.
+- Details are a responsive panel rather than a fully detachable inspector.
+- Health, weather, and workout import sources are placeholders only.
 
 Model listing flow:
 
@@ -407,7 +451,7 @@ Model listing flow:
 
 Current limitation: the provider model-list endpoints used by the app do not provide one portable, explicit `mcpCapable` field. The app therefore uses conservative provider-specific filtering for Settings model selection and should revisit this before real AI chat/tool execution is implemented.
 
-## Context Web Data Model
+## Context Matrix Data Model
 
 The Context Web / Info Matrix stores durable coaching context as `ContextEntry` items inside a `ContextMatrix`.
 
@@ -425,17 +469,42 @@ Fixed sections:
 - Personality matrix
 - Other notes
 
-Each entry stores section, title, value, source, optional confidence, created/updated timestamps, confirmed/pinned state, and archived state. Supported sources are `manual`, `chat_extracted`, `future_health_import`, and `system/default`.
+Each entry stores:
+
+- `id`
+- fixed app-controlled `section`
+- dynamic `node` label for user/app/model-created semantic nodes
+- optional `parentId` for sub-nodes
+- title/key and value/content
+- source: `manual`, `chat_extracted`, `user_confirmed`, `future_health_import`, `future_weather_import`, or `system_default`
+- lifespan: `temporary`, `session`, `long_term`, or `permanent`
+- status: `active`, `archived`, or `deleted`
+- confirmation state: `unconfirmed`, `confirmed`, or `rejected`
+- sensitivity: `normal`, `personal`, `health`, or `sensitive`
+- priority, optional confidence, created/updated timestamps, optional last-used timestamp, and optional expiry timestamp
 
 Rules:
 
 - Do not store API keys or secrets in the Context Matrix.
 - Store only durable user-stated coaching context, not every chat line.
-- Treat manual and pinned entries as higher authority than chat-extracted entries.
-- Do not silently overwrite manual or pinned entries from AI/rule extraction.
-- Exclude archived entries from prompt summaries and active UI counts.
+- Treat manual, user-confirmed, confirmed, and permanent entries as higher authority than chat-extracted entries.
+- Do not silently overwrite manual, user-confirmed, confirmed, or permanent entries from extraction or future imports.
+- Exclude archived, deleted, rejected, and expired entries from prompt summaries and active UI.
 - Keep prompt summaries bounded through `ContextSummaryBuilder`.
 - Future health, weather, and workout imports should produce `ContextEntry` candidates behind source-specific services, not direct UI writes.
+
+## App-Controlled Context Extraction
+
+No MCP/tool-calling path is implemented in the current codebase. Context updates are app-controlled:
+
+1. The user sends a message.
+2. `ChatController` loads the active Context Matrix and injects a shared compact summary into the provider request.
+3. The selected provider returns a normal text response.
+4. After the successful chat turn, `ContextExtractionService` runs a conservative local extraction pass over the user message.
+5. The app validates candidate entries, avoids overwriting protected manual/confirmed/permanent facts, and saves accepted entries through `ContextRepository`.
+6. Future chat requests include relevant active context regardless of whether the user chooses OpenAI, Gemini, or a future provider.
+
+`ContextExtractionService` also includes a defensive JSON suggestion parser for future AI-assisted extraction. That parser accepts strict suggestion fields such as action, node, title/key, value/content, lifespan, sensitivity, confidence, and reason, but parsed suggestions still require app-side validation before storage. Future provider tool-calling or MCP support could produce structured actions, but app validation should remain the authority before any context mutation.
 
 Intended MVP data flow:
 
@@ -469,12 +538,12 @@ Security and efficiency notes:
 - API key values should not be exposed through settings models or UI after saving; only saved/not-saved status should be surfaced.
 - Selected model IDs are provider-specific and stored through the settings storage boundary.
 - Context Matrix entries are sensitive user context and are stored locally through `ContextRepository` / `SecureContextRepository`. They must not contain API keys or secrets.
-- Archived Context Matrix entries must not be sent to AI providers.
+- Archived, deleted, rejected, and expired Context Matrix entries must not be sent to AI providers.
 - Model listing network calls must be explicit, provider-specific, user/API-key-driven, and never background-polled.
 - Model filtering should stay provider-specific and avoid capability probing loops unless a future documented feature requires explicit verification.
-- Chat prompts and responses are sensitive. They are held in memory only for the current Coach screen session and are not persisted. The rule-based extractor may persist durable user-stated coaching context from chat messages into the Context Matrix.
+- Chat prompts and responses are sensitive. They are held in memory only for the current Coach screen session and are not persisted. The app-controlled rule-based extractor may persist durable or temporary user-stated coaching context from chat messages into the Context Matrix.
 - AI chat network calls must use only the active provider, saved API key, and selected model from `SettingsStorage`.
-- AI chat prompts may include a bounded Context Web summary from active entries. Do not dump raw context history or archived/deleted entries into provider prompts.
+- AI chat prompts may include a bounded Context Matrix summary from active entries. Do not dump raw context history, archived/deleted/rejected entries, expired temporary context, or raw metadata into provider prompts.
 - Raw health data should not be logged.
 - Prompts containing health summaries should be treated as sensitive.
 - Any future backend or sync system must be documented in `docs/DECISIONS.md` before implementation.

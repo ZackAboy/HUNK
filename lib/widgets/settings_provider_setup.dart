@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/ai_model.dart';
 import '../models/ai_provider.dart';
+import 'context_matrix_theme.dart';
 
 class SettingsProviderSetup extends StatelessWidget {
   const SettingsProviderSetup({
@@ -39,8 +40,18 @@ class SettingsProviderSetup extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        color: ContextMatrixStyle.panel.withValues(alpha: 0.76),
+        border: Border.all(
+          color: ContextMatrixStyle.border.withValues(alpha: 0.78),
+        ),
         borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: ContextMatrixStyle.violet.withValues(alpha: 0.08),
+            blurRadius: 22,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -85,6 +96,8 @@ class _MissingKeySetup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -98,7 +111,6 @@ class _MissingKeySetup extends StatelessWidget {
           enableSuggestions: false,
           autocorrect: false,
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
             labelText: '${provider.label} API key',
             helperText: 'Saved keys are not shown again after saving.',
           ),
@@ -111,7 +123,7 @@ class _MissingKeySetup extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: isBusy ? null : onPasteApiKey,
               icon: const Icon(Icons.content_paste),
-              label: const Text('Paste'),
+              label: Text('Paste', style: textTheme.labelLarge),
             ),
             FilledButton.icon(
               onPressed: isBusy ? null : onSaveApiKey,
@@ -151,6 +163,7 @@ class _SavedKeySetup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,7 +173,12 @@ class _SavedKeySetup extends StatelessWidget {
         if (isFetchingModels) ...[
           const LinearProgressIndicator(),
           const SizedBox(height: 12),
-          const Text('Loading available models...'),
+          Text(
+            'Loading available models...',
+            style: textTheme.bodyMedium?.copyWith(
+              color: ContextMatrixStyle.mutedText,
+            ),
+          ),
         ] else if (models.isNotEmpty) ...[
           DropdownButtonFormField<String>(
             key: ValueKey('${provider.storageValue}-model-dropdown'),
@@ -183,13 +201,15 @@ class _SavedKeySetup extends StatelessWidget {
                       onSelectModel(value);
                     }
                   },
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Model',
-            ),
+            decoration: const InputDecoration(labelText: 'Model'),
           ),
         ] else ...[
-          const Text('No compatible models loaded yet.'),
+          Text(
+            'No compatible models loaded yet.',
+            style: textTheme.bodyMedium?.copyWith(
+              color: ContextMatrixStyle.mutedText,
+            ),
+          ),
         ],
         if (modelErrorMessage != null) ...[
           const SizedBox(height: 12),
@@ -211,7 +231,9 @@ class _SavedKeySetup extends StatelessWidget {
               label: const Text('Remove API key'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: colorScheme.error,
-                side: BorderSide(color: colorScheme.error),
+                side: BorderSide(
+                  color: ContextMatrixStyle.danger.withValues(alpha: 0.68),
+                ),
               ),
             ),
           ],
@@ -248,8 +270,9 @@ class _KeyStatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final iconColor = isSaved ? colorScheme.primary : colorScheme.outline;
+    final iconColor = isSaved
+        ? ContextMatrixStyle.success
+        : ContextMatrixStyle.mutedText;
 
     return Row(
       children: [
@@ -259,7 +282,16 @@ class _KeyStatusRow extends StatelessWidget {
           color: iconColor,
         ),
         const SizedBox(width: 8),
-        Expanded(child: Text(label)),
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: isSaved
+                  ? ContextMatrixStyle.text
+                  : ContextMatrixStyle.mutedText,
+            ),
+          ),
+        ),
       ],
     );
   }

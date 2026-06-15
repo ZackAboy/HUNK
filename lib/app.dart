@@ -9,6 +9,8 @@ import 'services/context_repository.dart';
 import 'services/model_listing_service.dart';
 import 'services/provider_ai_chat_service.dart';
 import 'services/settings_storage.dart';
+import 'theme/hunk_theme.dart';
+import 'widgets/context_matrix_theme.dart';
 
 class HunkApp extends StatelessWidget {
   const HunkApp({
@@ -29,10 +31,7 @@ class HunkApp extends StatelessWidget {
     return MaterialApp(
       title: 'Hunk',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF237A57)),
-        useMaterial3: true,
-      ),
+      theme: HunkTheme.dark(),
       home: AppShell(
         settingsStorage: settingsStorage,
         modelListingService: modelListingService,
@@ -117,29 +116,48 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       appBar: AppBar(title: Text(destination.title)),
-      body: SafeArea(
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            for (final destination in destinations) destination.screen,
-          ],
+      body: DecoratedBox(
+        decoration: BoxDecoration(gradient: ContextMatrixStyle.screenGradient),
+        child: SafeArea(
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: [
+              for (final destination in destinations) destination.screen,
+            ],
+          ),
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        destinations: [
-          for (final destination in destinations)
-            NavigationDestination(
-              icon: Icon(destination.icon),
-              selectedIcon: Icon(destination.selectedIcon),
-              label: destination.title,
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: ContextMatrixStyle.border.withValues(alpha: 0.65),
             ),
-        ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: ContextMatrixStyle.electricBlue.withValues(alpha: 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, -6),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          destinations: [
+            for (final destination in destinations)
+              NavigationDestination(
+                icon: Icon(destination.icon),
+                selectedIcon: Icon(destination.selectedIcon),
+                label: destination.title,
+              ),
+          ],
+        ),
       ),
     );
   }

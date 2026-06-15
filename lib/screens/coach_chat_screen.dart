@@ -7,6 +7,7 @@ import '../services/ai_chat_service.dart';
 import '../services/context_repository.dart';
 import '../services/provider_ai_chat_service.dart';
 import '../services/settings_storage.dart';
+import '../widgets/context_matrix_theme.dart';
 import 'context_web_screen.dart';
 
 class CoachChatScreen extends StatefulWidget {
@@ -123,30 +124,130 @@ class _ChatHeader extends StatelessWidget {
     final isCompact = MediaQuery.sizeOf(context).width < 360;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              'Coach chat',
-              style: Theme.of(context).textTheme.titleMedium,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: ContextMatrixStyle.panel.withValues(alpha: 0.68),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: ContextMatrixStyle.border.withValues(alpha: 0.72),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+          child: Row(
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: ContextMatrixStyle.teal.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: ContextMatrixStyle.teal.withValues(alpha: 0.34),
+                  ),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.psychology_outlined,
+                    color: ContextMatrixStyle.teal,
+                    size: 19,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Coach chat',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: ContextMatrixStyle.text,
+                  ),
+                ),
+              ),
+              _MatrixNavButton(compact: isCompact, onPressed: onOpenContext),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MatrixNavButton extends StatelessWidget {
+  const _MatrixNavButton({required this.compact, required this.onPressed});
+
+  final bool compact;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(999);
+
+    return Tooltip(
+      message: 'Open Context Web',
+      child: Semantics(
+        button: true,
+        label: 'Open Info Matrix',
+        child: Material(
+          color: Colors.transparent,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF22D3EE),
+                  Color(0xFF6366F1),
+                  Color(0xFFA855F7),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF38BDF8).withValues(alpha: 0.26),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: InkWell(
+              key: const ValueKey('coach-chat-context-button'),
+              borderRadius: radius,
+              onTap: onPressed,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: compact ? 42 : 108,
+                  minHeight: 42,
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 10 : 14,
+                    vertical: 9,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.hub_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      if (!compact) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          'Matrix',
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                              ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-          if (isCompact)
-            IconButton.filledTonal(
-              key: const ValueKey('coach-chat-context-button'),
-              onPressed: onOpenContext,
-              icon: const Icon(Icons.hub_outlined),
-              tooltip: 'Open Context Web',
-            )
-          else
-            FilledButton.tonalIcon(
-              key: const ValueKey('coach-chat-context-button'),
-              onPressed: onOpenContext,
-              icon: const Icon(Icons.hub_outlined),
-              label: const Text('Matrix'),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -166,12 +267,27 @@ class _MessageList extends StatelessWidget {
     final messages = chatController.messages;
 
     if (messages.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Ask the coach a question to test your selected provider and model.',
-            textAlign: TextAlign.center,
+          padding: const EdgeInsets.all(24),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: ContextMatrixStyle.panel.withValues(alpha: 0.62),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: ContextMatrixStyle.border.withValues(alpha: 0.72),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Text(
+                'Ask the coach a question to test your selected provider and model.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: ContextMatrixStyle.mutedText,
+                ),
+              ),
+            ),
           ),
         ),
       );
@@ -200,7 +316,9 @@ class _ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == AiChatRole.user;
-    final colorScheme = Theme.of(context).colorScheme;
+    final color = isUser
+        ? ContextMatrixStyle.electricBlue
+        : ContextMatrixStyle.violet;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -213,9 +331,17 @@ class _ChatBubble extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: isUser
-                  ? colorScheme.primaryContainer
-                  : colorScheme.surfaceContainerHighest,
+                  ? const Color(0xFF0B304D).withValues(alpha: 0.92)
+                  : ContextMatrixStyle.panel2.withValues(alpha: 0.9),
+              border: Border.all(color: color.withValues(alpha: 0.32)),
               borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -224,7 +350,7 @@ class _ChatBubble extends StatelessWidget {
                       message.text,
                       softWrap: true,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onPrimaryContainer,
+                        color: ContextMatrixStyle.text,
                       ),
                     )
                   : _AssistantMarkdown(text: message.text),
@@ -244,9 +370,8 @@ class _AssistantMarkdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final baseStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurfaceVariant,
+      color: ContextMatrixStyle.text,
     );
 
     return MarkdownBody(
@@ -264,17 +389,17 @@ class _AssistantMarkdown extends StatelessWidget {
         p: baseStyle,
         listBullet: baseStyle,
         a: baseStyle?.copyWith(
-          color: colorScheme.primary,
+          color: ContextMatrixStyle.electricBlue,
           decoration: TextDecoration.underline,
         ),
         code: baseStyle?.copyWith(
           fontFamily: 'monospace',
-          backgroundColor: colorScheme.surface,
+          backgroundColor: ContextMatrixStyle.background2,
         ),
         codeblockDecoration: BoxDecoration(
-          color: colorScheme.surface,
+          color: ContextMatrixStyle.background2,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: colorScheme.outlineVariant),
+          border: Border.all(color: ContextMatrixStyle.border),
         ),
         codeblockPadding: const EdgeInsets.all(8),
       ),
@@ -287,13 +412,14 @@ class _LoadingBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Align(
       alignment: Alignment.centerLeft,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
+          color: ContextMatrixStyle.panel2.withValues(alpha: 0.9),
+          border: Border.all(
+            color: ContextMatrixStyle.violet.withValues(alpha: 0.28),
+          ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Padding(
@@ -316,13 +442,14 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: colorScheme.errorContainer,
+          color: const Color(0xFF3B1420).withValues(alpha: 0.92),
+          border: Border.all(
+            color: ContextMatrixStyle.danger.withValues(alpha: 0.42),
+          ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Padding(
@@ -330,12 +457,12 @@ class _ErrorBanner extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.error_outline, color: colorScheme.onErrorContainer),
+              const Icon(Icons.error_outline, color: ContextMatrixStyle.danger),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   message,
-                  style: TextStyle(color: colorScheme.onErrorContainer),
+                  style: const TextStyle(color: Color(0xFFFFDCE4)),
                 ),
               ),
             ],
@@ -359,34 +486,41 @@ class _ChatComposer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(
-            child: TextField(
-              key: const ValueKey('coach-chat-input'),
-              controller: controller,
-              enabled: enabled,
-              minLines: 1,
-              maxLines: 4,
-              textInputAction: TextInputAction.send,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Ask the coach',
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: ContextMatrixStyle.background.withValues(alpha: 0.72),
+        border: Border(
+          top: BorderSide(
+            color: ContextMatrixStyle.border.withValues(alpha: 0.58),
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: TextField(
+                key: const ValueKey('coach-chat-input'),
+                controller: controller,
+                enabled: enabled,
+                minLines: 1,
+                maxLines: 4,
+                textInputAction: TextInputAction.send,
+                decoration: const InputDecoration(labelText: 'Ask the coach'),
+                onSubmitted: enabled ? (_) => onSend() : null,
               ),
-              onSubmitted: enabled ? (_) => onSend() : null,
             ),
-          ),
-          const SizedBox(width: 8),
-          IconButton.filled(
-            key: const ValueKey('coach-chat-send-button'),
-            onPressed: enabled ? onSend : null,
-            icon: const Icon(Icons.send),
-            tooltip: 'Send',
-          ),
-        ],
+            const SizedBox(width: 8),
+            IconButton.filled(
+              key: const ValueKey('coach-chat-send-button'),
+              onPressed: enabled ? onSend : null,
+              icon: const Icon(Icons.send),
+              tooltip: 'Send',
+            ),
+          ],
+        ),
       ),
     );
   }

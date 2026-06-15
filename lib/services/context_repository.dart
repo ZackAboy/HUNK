@@ -13,6 +13,8 @@ abstract class ContextRepository {
   Future<ContextEntry> saveEntry(ContextEntry entry);
 
   Future<void> archiveEntry(String entryId);
+
+  Future<void> removeEntry(String entryId);
 }
 
 class SecureContextRepository implements ContextRepository {
@@ -73,11 +75,28 @@ class SecureContextRepository implements ContextRepository {
     final entries = [
       for (final entry in matrix.entries)
         if (entry.id == entryId)
-          entry.copyWith(isArchived: true, updatedAt: now)
+          entry.copyWith(status: ContextStatus.archived, updatedAt: now)
         else
           entry,
     ];
 
     await saveMatrix(ContextMatrix(entries: entries));
+  }
+
+  @override
+  Future<void> removeEntry(String entryId) async {
+    final matrix = await loadMatrix();
+    final now = DateTime.now();
+    await saveMatrix(
+      ContextMatrix(
+        entries: [
+          for (final entry in matrix.entries)
+            if (entry.id == entryId)
+              entry.copyWith(status: ContextStatus.deleted, updatedAt: now)
+            else
+              entry,
+        ],
+      ),
+    );
   }
 }

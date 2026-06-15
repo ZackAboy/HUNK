@@ -17,6 +17,7 @@ import 'package:hunk/models/context_matrix.dart';
 import 'package:hunk/screens/context_web_screen.dart';
 import 'package:hunk/services/ai_chat_service.dart';
 import 'package:hunk/services/context_extraction_service.dart';
+import 'package:hunk/services/context_missing_basics_detector.dart';
 import 'package:hunk/services/context_repository.dart';
 import 'package:hunk/services/context_summary_builder.dart';
 import 'package:hunk/services/gemini_chat_service.dart';
@@ -38,12 +39,21 @@ void main() {
     final entry = ContextEntry(
       id: 'ctx_1',
       section: ContextSection.goals,
+      node: 'Running',
+      parentId: 'ctx_parent',
       title: 'Primary fitness goal',
       value: 'Run a half marathon',
       source: ContextSource.chatExtracted,
+      lifespan: ContextLifespan.longTerm,
+      status: ContextStatus.active,
+      confirmationState: ContextConfirmationState.confirmed,
+      sensitivity: ContextSensitivity.personal,
+      priority: 0.83,
       confidence: 0.7,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      lastUsedAt: updatedAt,
+      expiresAt: DateTime.utc(2026, 6, 20),
       isPinned: true,
     );
 
@@ -51,28 +61,53 @@ void main() {
 
     expect(restored.id, 'ctx_1');
     expect(restored.section, ContextSection.goals);
+    expect(restored.nodeLabel, 'Running');
+    expect(restored.parentId, 'ctx_parent');
     expect(restored.source, ContextSource.chatExtracted);
+    expect(restored.lifespan, ContextLifespan.longTerm);
+    expect(restored.status, ContextStatus.active);
+    expect(restored.confirmationState, ContextConfirmationState.confirmed);
+    expect(restored.sensitivity, ContextSensitivity.personal);
+    expect(restored.priority, 0.83);
     expect(restored.confidence, 0.7);
     expect(restored.createdAt, createdAt);
     expect(restored.updatedAt, updatedAt);
+    expect(restored.lastUsedAt, updatedAt);
+    expect(restored.expiresAt, DateTime.utc(2026, 6, 20));
     expect(restored.isPinned, isTrue);
   });
 
-  test('context summary is compact and excludes archived entries', () {
+  test('context summary filters status, lifespan, and confirmation state', () {
     final now = DateTime.utc(2026, 6, 15);
     final summary =
-        const ContextSummaryBuilder(maxEntries: 4, maxCharacters: 1200).build(
+        const ContextSummaryBuilder(maxEntries: 4, maxCharacters: 1600).build(
           ContextMatrix(
             entries: [
               ContextEntry(
                 id: 'goal',
                 section: ContextSection.goals,
-                title: 'Primary fitness goal',
+                node: 'Running',
+                title: 'Primary goal',
                 value: 'Run a half marathon',
-                source: ContextSource.manual,
+                source: ContextSource.userConfirmed,
+                lifespan: ContextLifespan.permanent,
+                confirmationState: ContextConfirmationState.confirmed,
+                priority: 0.95,
                 createdAt: now,
                 updatedAt: now,
                 isPinned: true,
+              ),
+              ContextEntry(
+                id: 'today',
+                section: ContextSection.currentState,
+                node: 'Today',
+                title: 'Energy',
+                value: 'Low energy today',
+                source: ContextSource.chatExtracted,
+                lifespan: ContextLifespan.temporary,
+                expiresAt: now.add(const Duration(hours: 8)),
+                createdAt: now,
+                updatedAt: now,
               ),
               ContextEntry(
                 id: 'archived',
@@ -84,15 +119,88 @@ void main() {
                 updatedAt: now,
                 isArchived: true,
               ),
+              ContextEntry(
+                id: 'deleted',
+                section: ContextSection.preferences,
+                title: 'Deleted preference',
+                value: 'Do not send deleted context',
+                source: ContextSource.manual,
+                status: ContextStatus.deleted,
+                createdAt: now,
+                updatedAt: now,
+              ),
+              ContextEntry(
+                id: 'rejected',
+                section: ContextSection.preferences,
+                title: 'Rejected preference',
+                value: 'Do not send rejected context',
+                source: ContextSource.chatExtracted,
+                confirmationState: ContextConfirmationState.rejected,
+                createdAt: now,
+                updatedAt: now,
+              ),
+              ContextEntry(
+                id: 'expired',
+                section: ContextSection.currentState,
+                title: 'Expired state',
+                value: 'Do not send expired context',
+                source: ContextSource.chatExtracted,
+                lifespan: ContextLifespan.temporary,
+                expiresAt: now.subtract(const Duration(minutes: 1)),
+                createdAt: now,
+                updatedAt: now,
+              ),
             ],
           ),
+          now: now,
         );
 
     expect(summary, contains('APP-STORED USER CONTEXT MATRIX'));
-    expect(summary, contains('Primary fitness goal: Run a half marathon'));
+    expect(summary, contains('Primary goal: Run a half marathon'));
+    expect(summary, contains('Energy: Low energy today'));
+    expect(summary, contains('Missing basics to ask naturally'));
     expect(summary, contains('END APP-STORED USER CONTEXT MATRIX'));
     expect(summary, isNot(contains('Archived value')));
-    expect(summary.length, lessThanOrEqualTo(1200));
+    expect(summary, isNot(contains('Do not send deleted context')));
+    expect(summary, isNot(contains('Do not send rejected context')));
+    expect(summary, isNot(contains('Do not send expired context')));
+    expect(summary.length, lessThanOrEqualTo(1600));
+  });
+
+  test('missing basics detector reports only absent required basics', () {
+    final now = DateTime.utc(2026, 6, 15);
+    final missing = const ContextMissingBasicsDetector().missingBasics(
+      ContextMatrix(
+        entries: [
+          ContextEntry(
+            id: 'age',
+            section: ContextSection.profile,
+            node: 'Body',
+            title: 'Age',
+            value: '34',
+            source: ContextSource.manual,
+            createdAt: now,
+            updatedAt: now,
+          ),
+          ContextEntry(
+            id: 'goal',
+            section: ContextSection.goals,
+            node: 'Goals',
+            title: 'Primary goal',
+            value: 'Run a 5K',
+            source: ContextSource.manual,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
+      ),
+      now: now,
+    );
+
+    expect(missing.map((item) => item.title), isNot(contains('Age')));
+    expect(missing.map((item) => item.title), isNot(contains('Primary goal')));
+    expect(missing.map((item) => item.title), contains('Height'));
+    expect(missing.map((item) => item.title), contains('Equipment/access'));
   });
 
   test('context extraction is conservative around manual entries', () {
@@ -135,6 +243,66 @@ void main() {
       extracted.every((entry) => entry.source == ContextSource.chatExtracted),
       isTrue,
     );
+    expect(
+      extracted.any(
+        (entry) =>
+            entry.nodeLabel == 'Running' &&
+            entry.lifespan == ContextLifespan.longTerm,
+      ),
+      isTrue,
+    );
+  });
+
+  test('context extraction captures temporary current state safely', () {
+    final now = DateTime.utc(2026, 6, 15, 9);
+
+    final extracted = const ContextExtractionService().extractFromUserMessage(
+      message:
+          'Today my legs are sore and my energy is low, avoid heavy squats this week.',
+      existingEntries: const [],
+      now: now,
+    );
+
+    expect(
+      extracted.any(
+        (entry) =>
+            entry.lifespan == ContextLifespan.temporary &&
+            entry.expiresAt != null,
+      ),
+      isTrue,
+    );
+    expect(
+      extracted.any((entry) => entry.sensitivity == ContextSensitivity.health),
+      isTrue,
+    );
+  });
+
+  test('context extraction parser accepts guarded JSON suggestions', () {
+    final suggestions = const ContextExtractionService().parseSuggestionsJson(
+      jsonEncode({
+        'updates': [
+          {
+            'action': 'create',
+            'node': 'Running',
+            'key': '5K goal',
+            'value': 'Improve 5K time',
+            'lifespan': 'long_term',
+            'sensitivity': 'normal',
+            'confidence': 0.81,
+            'reason': 'User stated a running goal',
+          },
+          {'action': 'create', 'node': 'Health'},
+          {'action': 'nonsense'},
+        ],
+      }),
+    );
+
+    expect(suggestions, hasLength(1));
+    expect(suggestions.single.action, ContextSuggestionAction.create);
+    expect(suggestions.single.section, ContextSection.goals);
+    expect(suggestions.single.node, 'Running');
+    expect(suggestions.single.lifespan, ContextLifespan.longTerm);
+    expect(suggestions.single.confidence, 0.81);
   });
 
   testWidgets('bottom navigation switches between shell screens', (
@@ -569,8 +737,110 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('coach-chat-context-button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Context Web'), findsOneWidget);
-    expect(find.text('Info Matrix'), findsOneWidget);
+    expect(find.byKey(const ValueKey('context-network-chart')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('context-web-close-button')),
+      findsOneWidget,
+    );
+    expect(find.text('Core'), findsWidgets);
+  });
+
+  testWidgets(
+    'context matrix is fullscreen and hides raw metadata by default',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF237A57),
+            ),
+            useMaterial3: true,
+          ),
+          home: ContextWebScreen(repository: FakeContextRepository()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('context-network-chart')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('context-matrix-infinite-backdrop')),
+        findsOneWidget,
+      );
+      expect(find.text('Core'), findsWidgets);
+      expect(find.text('Goals'), findsWidgets);
+      expect(find.text('Age'), findsNothing);
+      expect(find.text('Info Matrix'), findsNothing);
+      expect(find.text('Complete profile'), findsNothing);
+      expect(find.textContaining('confidence'), findsNothing);
+      expect(find.textContaining('active'), findsNothing);
+    },
+  );
+
+  testWidgets('context matrix node management opens details', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF237A57)),
+          useMaterial3: true,
+        ),
+        home: ContextWebScreen(repository: FakeContextRepository()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.longPress(
+      find.byKey(const ValueKey('context-section-profile')).first,
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('context-detail-profile')),
+      findsOneWidget,
+    );
+    expect(find.text('Profile'), findsWidgets);
+    expect(find.text('Age'), findsWidgets);
+  });
+
+  testWidgets('context matrix shows only the clicked node subnodes', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF237A57)),
+          useMaterial3: true,
+        ),
+        home: ContextWebScreen(repository: FakeContextRepository()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Age'), findsNothing);
+    expect(find.text('Primary goal'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('context-section-profile')).first,
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Age'), findsWidgets);
+    expect(find.text('Primary goal'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('context-section-goals')).first,
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Age'), findsNothing);
+    expect(find.text('Primary goal'), findsWidgets);
   });
 
   testWidgets('context web renders and archives manual context', (
@@ -589,10 +859,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Context Web'), findsOneWidget);
-    expect(find.text('Info Matrix'), findsOneWidget);
-    expect(find.text('Complete profile'), findsOneWidget);
-    expect(find.text('Profile'), findsWidgets);
+    expect(find.byKey(const ValueKey('context-network-chart')), findsOneWidget);
+    expect(find.text('Complete profile'), findsNothing);
     expect(find.text('Goals'), findsWidgets);
     expect(find.text('Nutrition'), findsOneWidget);
 
@@ -610,10 +878,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repository.matrix.activeEntries.single.title, 'Age');
-    expect(repository.matrix.activeEntries.single.source, ContextSource.manual);
-    expect(find.text('34'), findsOneWidget);
+    expect(
+      repository.matrix.activeEntries.single.source,
+      ContextSource.userConfirmed,
+    );
 
-    await tester.ensureVisible(find.byTooltip('Archive').first);
+    await tester.longPress(
+      find.byKey(const ValueKey('context-section-profile')).first,
+      warnIfMissed: false,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Archive').first);
     await tester.pumpAndSettle();
@@ -640,9 +913,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Complete profile'), findsOneWidget);
+    expect(find.text('Age'), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey('context-section-profile')).first,
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+
     expect(find.text('Age'), findsWidgets);
-    expect(find.text('Primary fitness goal'), findsWidgets);
+    expect(find.text('Primary goal'), findsNothing);
+    expect(find.text('Complete profile'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -945,7 +1226,20 @@ class FakeContextRepository implements ContextRepository {
       entries: [
         for (final entry in matrix.entries)
           if (entry.id == entryId)
-            entry.copyWith(isArchived: true, updatedAt: now)
+            entry.copyWith(status: ContextStatus.archived, updatedAt: now)
+          else
+            entry,
+      ],
+    );
+  }
+
+  @override
+  Future<void> removeEntry(String entryId) async {
+    matrix = ContextMatrix(
+      entries: [
+        for (final entry in matrix.entries)
+          if (entry.id == entryId)
+            entry.copyWith(status: ContextStatus.deleted)
           else
             entry,
       ],

@@ -407,3 +407,178 @@ Follow-up tasks:
 
 - Manually inspect node spacing with real user context data.
 - Consider optional pan/zoom only if dense context makes the radial chart too crowded.
+
+## 2026-06-15 - Interactive 3D Info Matrix UI
+
+Date: 2026-06-15
+
+Task summary: Upgraded Context Web / Info Matrix into a dark, interactive 3D-feeling matrix universe with pan/zoom, tap-to-focus navigation, neon section nodes, animated connection lines, responsive focused details, a premium chat Matrix button, and hard remove support for context entries.
+
+Files changed:
+
+- `lib/screens/coach_chat_screen.dart`
+- `lib/screens/context_web_screen.dart`
+- `lib/providers/context_controller.dart`
+- `lib/services/context_repository.dart`
+- `lib/widgets/context_matrix_detail_panel.dart`
+- `lib/widgets/context_matrix_models.dart`
+- `lib/widgets/context_matrix_theme.dart`
+- `lib/widgets/context_matrix_universe.dart`
+- `lib/widgets/context_web_graph.dart`
+- `test/widget_test.dart`
+- `docs/FEATURES.md`
+- `docs/ARCHITECTURE.md`
+- `docs/DECISIONS.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Use Flutter primitives (`InteractiveViewer`, `TransformationController`, `CustomPainter`, `Transform`, finite animations, scale/opacity/glow) instead of adding a heavy 3D/game dependency.
+- Keep matrix persistence and business logic in `ContextRepository` and `ContextController`; visual widgets remain persistence-free.
+- Add hard remove in addition to archive so users can permanently delete individual context entries from local secure storage.
+- Keep animations finite and reduced-motion-aware where practical; do not add continuous background animation loops.
+
+Follow-up tasks:
+
+- Validate the matrix feel on real iPhone-sized devices.
+- Consider richer large-graph navigation if users accumulate many entries per section.
+- Revisit true 3D or force-directed layout only if future product requirements justify a documented dependency.
+
+Verification:
+
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+
+## 2026-06-15 - Fullscreen Context Matrix And App-Controlled Context Pipeline
+
+Date: 2026-06-15
+
+Task summary: Refined Context Web / Info Matrix into a fullscreen interactive-only matrix universe and expanded the context system into a dynamic, model-driven but app-controlled data pipeline used by every chat provider.
+
+Files changed:
+
+- `lib/models/context_entry.dart`
+- `lib/models/context_matrix.dart`
+- `lib/providers/chat_controller.dart`
+- `lib/providers/context_controller.dart`
+- `lib/screens/context_web_screen.dart`
+- `lib/services/context_extraction_service.dart`
+- `lib/services/context_missing_basics_detector.dart`
+- `lib/services/context_repository.dart`
+- `lib/services/context_summary_builder.dart`
+- `lib/widgets/context_matrix_detail_panel.dart`
+- `lib/widgets/context_matrix_theme.dart`
+- `lib/widgets/context_matrix_universe.dart`
+- `lib/widgets/context_web_graph.dart`
+- `test/widget_test.dart`
+- `docs/ARCHITECTURE.md`
+- `docs/FEATURES.md`
+- `docs/DECISIONS.md`
+- `docs/SECURITY_AND_EFFICIENCY.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Make the Matrix screen graph-only by default: no list view, visible counters, confidence values, raw IDs, or metadata panels on the main surface.
+- Keep dynamic nodes and sub-nodes in the local `ContextEntry` model using section, node label, optional parent ID, source, lifespan, status, confirmation, sensitivity, priority, confidence, and timestamps.
+- Build provider prompt context through one shared `ContextSummaryBuilder` before OpenAI, Gemini, or future provider calls. Provider services do not own context logic.
+- Use conservative local extraction now, plus a defensive JSON suggestion parser for future AI-assisted extraction. Models never mutate storage directly.
+- Keep MCP/tool-calling out of scope because no safe tool-calling path exists in the current codebase; future MCP/tools must still pass through app validation.
+- Detect missing basic coaching info locally and include bounded missing-basics guidance in chat prompts without blocking normal conversation.
+
+Follow-up tasks:
+
+- Manually inspect the fullscreen matrix on real small iPhone hardware for touch target spacing and perceived motion.
+- Add user-facing review flows before enabling provider-backed AI extraction calls.
+- Revisit summary token limits once real health imports, longer conversations, or larger context graphs exist.
+- Define export/deletion UX before expanding context storage beyond local secure JSON.
+
+Verification:
+
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+
+## 2026-06-15 - Context Matrix Exclusive Subnode Expansion
+
+Date: 2026-06-15
+
+Task summary: Adjusted Context Matrix interactions so child/sub-nodes are hidden by default, appear only for the explicitly clicked parent section, and collapse when another section or the Core hub is selected.
+
+Files changed:
+
+- `lib/screens/context_web_screen.dart`
+- `lib/widgets/context_web_graph.dart`
+- `lib/widgets/context_matrix_universe.dart`
+- `test/widget_test.dart`
+- `docs/ARCHITECTURE.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Keep at most one expanded section in Matrix UI state.
+- Do not treat focus alone as expansion inside the graph layout.
+- Preserve long-press/focused-tap section management while keeping the main surface visually quieter.
+
+Verification:
+
+- `dart format lib test`
+- `flutter test`
+
+## 2026-06-15 - App-Wide Matrix Theme Unification
+
+Date: 2026-06-15
+
+Task summary: Updated the main app shell and non-Matrix screens to share the dark, clean, futuristic Matrix visual language.
+
+Files changed:
+
+- `lib/app.dart`
+- `lib/theme/hunk_theme.dart`
+- `lib/screens/home_screen.dart`
+- `lib/screens/health_screen.dart`
+- `lib/screens/coach_chat_screen.dart`
+- `lib/screens/settings_screen.dart`
+- `lib/widgets/placeholder_panel.dart`
+- `lib/widgets/settings_provider_setup.dart`
+- `docs/ARCHITECTURE.md`
+- `docs/FEATURES.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Centralize the app-wide dark Material theme in `HunkTheme.dark()` and reuse `ContextMatrixStyle` colors so the app shell matches the Matrix screen.
+- Keep screen copy and existing navigation behavior intact while updating backgrounds, app bar, bottom navigation, panels, chat bubbles, composer, and settings controls.
+- Avoid adding visual dependencies; the unified style uses existing Flutter theming and lightweight decoration.
+
+Verification:
+
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+
+## 2026-06-15 - Infinite-Feeling Matrix Backdrop
+
+Date: 2026-06-15
+
+Task summary: Made the Matrix screen background feel infinite by moving the star/grid backdrop into a viewport-painted procedural layer that repeats and subtly parallaxes with pan/zoom.
+
+Files changed:
+
+- `lib/widgets/context_matrix_universe.dart`
+- `test/widget_test.dart`
+- `docs/ARCHITECTURE.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Keep the graph itself bounded and lightweight.
+- Use a procedural `CustomPainter` backdrop instead of a massive image, unbounded canvas, game engine, or new dependency.
+- Increase pan boundary margin enough to avoid obvious hard edges while keeping the interactive graph maintainable.
+
+Verification:
+
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
