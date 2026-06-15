@@ -94,9 +94,24 @@ Planned AI providers:
 - OpenAI
 - Google Gemini
 
-For the MVP, users should provide their own API keys inside the app settings screen. API keys should be stored locally using secure storage once implemented.
+For the MVP, users provide their own API keys inside the app Settings screen. API keys are stored with `flutter_secure_storage` and are not displayed back to the user after saving.
+
+After a key is saved, Settings can fetch the selected provider's available models from the provider's official model-list endpoint and store a provider-specific selected model locally.
 
 Do not commit API keys, test keys, or local secrets to the repository.
+
+## Secure Storage Setup
+
+The app uses `flutter_secure_storage` for local API key storage.
+
+Current setup notes:
+
+- Android must support API level 23 or newer for this secure-storage package version.
+- Android auto backup is disabled in `android/app/src/main/AndroidManifest.xml` while sensitive backup/restore behavior is undefined.
+- No biometric-gated key access is configured yet.
+- No app backend receives API keys.
+- Model list calls require network access and valid provider API keys, but tests use fake model listing services and do not need real keys.
+- iOS secure-storage behavior should be verified on a simulator and physical device before release.
 
 ## Documentation Setup
 

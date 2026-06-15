@@ -142,3 +142,161 @@ Follow-up tasks:
 - Keep future health work split between UI, health services/adapters, permission handling, and health models.
 - Keep future AI chat work split between UI, prompt construction, provider-specific clients, and response models.
 - Document every new shared module, dependency, and cross-module API in `docs/ARCHITECTURE.md`.
+
+## 2026-06-14 - Local AI Provider Settings
+
+Date: 2026-06-14
+
+Task summary: Implemented the Settings screen for local AI provider configuration with OpenAI/Gemini provider selection, secure local API key storage, saved-key status, save action, and clear action.
+
+Files changed:
+
+- `android/app/src/main/AndroidManifest.xml`
+- `lib/main.dart`
+- `lib/app.dart`
+- `lib/models/ai_provider.dart`
+- `lib/models/ai_settings.dart`
+- `lib/providers/settings_controller.dart`
+- `lib/screens/settings_screen.dart`
+- `lib/services/settings_storage.dart`
+- `pubspec.yaml`
+- `pubspec.lock`
+- `test/widget_test.dart`
+- `docs/ARCHITECTURE.md`
+- `docs/FEATURES.md`
+- `docs/DECISIONS.md`
+- `docs/SECURITY_AND_EFFICIENCY.md`
+- `docs/SETUP.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Use `flutter_secure_storage` for local API key persistence.
+- Keep secure storage behind `SettingsStorage` / `SecureSettingsStorage` instead of calling it from UI widgets.
+- Keep `AiSettings` non-secret by storing only active provider and saved-key status.
+- Disable Android auto backup while sensitive backup/restore behavior is undefined.
+- Do not implement real AI API calls, health integrations, backend calls, logging, analytics, or background work in this task.
+
+Follow-up tasks:
+
+- Add provider-specific AI API clients behind service boundaries.
+- Add prompt construction using compact health summaries before enabling real chat calls.
+- Add a way for AI service code to retrieve stored keys without exposing them to UI models.
+- Verify secure storage behavior on Android and iOS devices before release.
+
+## 2026-06-15 - Provider-Focused Settings And Model Selection
+
+Date: 2026-06-15
+
+Task summary: Improved the Settings API-key flow so only the active provider's key setup is shown, added clipboard paste, provider-specific key removal, model fetching, model dropdowns, and provider-specific selected model storage.
+
+Files changed:
+
+- `lib/app.dart`
+- `lib/models/ai_model.dart`
+- `lib/models/ai_provider.dart`
+- `lib/models/ai_settings.dart`
+- `lib/providers/settings_controller.dart`
+- `lib/screens/settings_screen.dart`
+- `lib/services/gemini_model_listing_service.dart`
+- `lib/services/model_listing_service.dart`
+- `lib/services/openai_model_listing_service.dart`
+- `lib/services/settings_storage.dart`
+- `lib/widgets/settings_provider_setup.dart`
+- `pubspec.yaml`
+- `pubspec.lock`
+- `test/widget_test.dart`
+- `docs/ARCHITECTURE.md`
+- `docs/FEATURES.md`
+- `docs/DECISIONS.md`
+- `docs/SECURITY_AND_EFFICIENCY.md`
+- `docs/SETUP.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Add `http` for explicit provider model-listing calls.
+- Keep model listing behind `ModelListingService`, `OpenAiModelListingService`, and `GeminiModelListingService`.
+- Cache fetched model lists in memory only as model IDs/display names.
+- Store selected model IDs through `SettingsStorage`, provider-specific to OpenAI and Gemini.
+- Use conservative model filtering to avoid obvious embedding, image, audio, moderation, live, and unrelated models.
+- Do not implement AI chat responses, health integrations, chat history persistence, backend sync, analytics, crash reporting, polling, or background fetch.
+
+Follow-up tasks:
+
+- Use the provider-specific selected model when implementing AI chat service calls.
+- Add a secure service method for future AI clients to read the selected provider key without exposing keys to UI models.
+- Revisit model filtering after real-device testing with real provider accounts and current model-list API responses.
+- Consider integration tests for real secure storage on iOS and Android devices before release.
+
+## 2026-06-15 - Settings Model Dropdown Overflow And Text/Tool Filtering
+
+Date: 2026-06-15
+
+Task summary: Fixed the Settings model dropdown so long model names fit on small iPhone-width screens, and tightened provider model filtering toward likely text/tool-capable candidates for future MCP-style coaching.
+
+Files changed:
+
+- `lib/providers/settings_controller.dart`
+- `lib/services/gemini_model_listing_service.dart`
+- `lib/services/openai_model_listing_service.dart`
+- `lib/widgets/settings_provider_setup.dart`
+- `test/widget_test.dart`
+- `docs/ARCHITECTURE.md`
+- `docs/FEATURES.md`
+- `docs/DECISIONS.md`
+- `docs/SECURITY_AND_EFFICIENCY.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Keep the overflow fix inside the reusable Settings provider widget by expanding the dropdown and ellipsizing model labels.
+- Keep model filtering inside provider-specific services instead of the UI.
+- Treat MCP/tool capability as a conservative provider-specific approximation because the current model-list endpoints do not expose one portable explicit MCP-capability field.
+- Exclude legacy OpenAI GPT-3.x-style IDs and non-Gemini Google model families from the Settings model picker.
+- Do not add dependencies, permissions, background work, real AI calls, health integrations, backend sync, analytics, or crash reporting.
+
+Follow-up tasks:
+
+- Revisit model capability filtering when real AI chat/tool execution is implemented.
+- Add explicit provider capability metadata if OpenAI or Gemini expose stable tool/MCP fields through list endpoints.
+- Verify the Settings dropdown on real iOS devices during manual QA.
+
+## 2026-06-15 - Basic Provider Chat Manual Test Flow
+
+Date: 2026-06-15
+
+Task summary: Implemented a basic text-only Coach chat screen so the selected provider, saved API key, and selected model can be manually tested from inside the app.
+
+Files changed:
+
+- `lib/app.dart`
+- `lib/models/ai_chat_message.dart`
+- `lib/providers/chat_controller.dart`
+- `lib/screens/coach_chat_screen.dart`
+- `lib/services/ai_chat_service.dart`
+- `lib/services/gemini_chat_service.dart`
+- `lib/services/openai_chat_service.dart`
+- `lib/services/provider_ai_chat_service.dart`
+- `test/widget_test.dart`
+- `docs/ARCHITECTURE.md`
+- `docs/FEATURES.md`
+- `docs/DECISIONS.md`
+- `docs/SECURITY_AND_EFFICIENCY.md`
+- `docs/TASK_LOG.md`
+
+Important decisions:
+
+- Reuse `SettingsStorage` as the only provider/API-key/model source of truth for chat sends.
+- Keep chat UI, chat state, shared chat models, provider router, and provider-specific HTTP clients separated.
+- Use OpenAI Responses API with `store: false` for OpenAI text chat.
+- Use Gemini `generateContent` for Gemini text chat.
+- Keep chat non-streaming, text-only, user-triggered, and in-memory only for this task.
+- Do not add dependencies, health integrations, background work, tools, MCP behavior, backend sync, analytics, crash reporting, or persistent chat memory.
+
+Follow-up tasks:
+
+- Manually test OpenAI and Gemini chat on iOS/Android with real saved keys and selected models.
+- Add compact health summary prompt construction before turning this into the real fitness coach flow.
+- Revisit model capability filtering and request parameters before adding tools, MCP behavior, or streaming.
+- Define chat retention/deletion policy before adding persistent chat history.

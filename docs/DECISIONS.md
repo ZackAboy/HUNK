@@ -167,3 +167,87 @@ Status: accepted
 Context: Apple HealthKit, Google Health Connect, future watch support, widgets, and platform permissions will have platform-specific behavior that should not leak across UI files.
 
 Consequences: Platform-specific code should be contained in dedicated services/adapters with clear interfaces. Screens and widgets should consume platform-neutral state or models wherever practical.
+
+## 2026-06-14 - Use flutter_secure_storage For Local API Keys
+
+Date: 2026-06-14
+
+Decision: Use `flutter_secure_storage` for local OpenAI and Google Gemini API key storage.
+
+Status: accepted
+
+Context: API keys are sensitive credentials and must not be stored in plain preferences, logs, docs, test fixtures, or UI state after saving. The package is a Flutter plugin for encrypted platform-specific secure storage and supports the project targets.
+
+Consequences: Secure key persistence lives behind `SettingsStorage` / `SecureSettingsStorage`. UI code must not call `flutter_secure_storage` directly. The Settings UI exposes only saved/not-saved status after save. Widget tests use a fake storage boundary instead of platform secure storage. Android must meet the package minimum SDK requirement of 23.
+
+## 2026-06-14 - Disable Android Auto Backup For MVP Secure Storage
+
+Date: 2026-06-14
+
+Decision: Disable Android app auto backup in the main Android manifest.
+
+Status: accepted
+
+Context: `flutter_secure_storage` documents Android backup/restore concerns for encrypted secure-storage data. The MVP stores user-provided AI API keys locally and does not yet define encrypted backup/restore behavior.
+
+Consequences: Android app data is not automatically backed up by the platform. Future backup or sync behavior involving API keys or health data must be user-visible, opt-in where appropriate, and documented before implementation.
+
+## 2026-06-15 - Use http For Provider Model Listing
+
+Date: 2026-06-15
+
+Decision: Add the `http` package for explicit OpenAI and Gemini model-listing calls.
+
+Status: accepted
+
+Context: The app needs to fetch provider model lists from official provider APIs after a user saves an API key. No direct HTTP client dependency existed.
+
+Consequences: Network behavior must remain isolated behind provider-specific services. UI widgets must not make HTTP calls. The `http` dependency should not be used for background polling, analytics, backend sync, or AI chat responses without a documented follow-up decision.
+
+## 2026-06-15 - Cache Model Lists In Memory Only
+
+Date: 2026-06-15
+
+Decision: Cache fetched model lists only in memory as model IDs and display names for the lifetime of the Settings controller.
+
+Status: accepted
+
+Context: Persisting provider model lists is not necessary for the MVP settings flow and could create stale data. The app only needs to avoid repeated calls during rebuilds or provider tab switching.
+
+Consequences: Model lists are fetched after saving a key, when Settings opens for a provider with a saved key and no in-memory model cache, or when the user taps refresh. Raw provider responses and API keys are not cached. Removing a provider key clears that provider's in-memory model cache and selected model.
+
+## 2026-06-15 - Use Conservative Provider Model Filtering
+
+Date: 2026-06-15
+
+Decision: Filter model lists conservatively to likely text/generative models.
+
+Status: accepted
+
+Context: Provider model list APIs can include embedding, image, audio, moderation, live, and other non-text models. The app should not hardcode a tiny permanent list, but it should avoid obvious unrelated models.
+
+Consequences: OpenAI filtering keeps likely current GPT-family, ChatGPT-family, and `o*` reasoning model IDs while excluding obvious embedding/image/audio/moderation/realtime/search and legacy families. Gemini filtering keeps Gemini-family models with `generateContent` support and excludes obvious embedding/image/video/audio/live-only families. Filtering may need refinement as provider APIs evolve.
+
+## 2026-06-15 - Prefer Text/Tool-Capable Model Candidates In Settings
+
+Date: 2026-06-15
+
+Decision: The Settings model picker should prefer likely text models that can support future tool/MCP-style coaching, and it should hide obvious non-text or specialized model families.
+
+Status: accepted
+
+Context: Future AI coach behavior may need models that can use tools before making decisions. The current OpenAI list-models endpoint exposes basic model metadata such as ID and ownership, but not a direct per-model MCP capability flag. Gemini's models endpoint exposes supported generation methods such as `generateContent`, but still does not provide one portable MCP-capability field across providers.
+
+Consequences: Model filtering remains provider-specific. OpenAI filtering uses current GPT-family, ChatGPT-family, and `o*` reasoning ID families, excluding obvious embedding, image, audio, speech, realtime, search, video, vision, legacy GPT-3.x-style, and specialized computer-use IDs. Gemini filtering requires Gemini-family IDs with `generateContent` support and excludes obvious embedding, image/video/audio generation, realtime, and live-only families. This is a conservative Settings filter, not a final capability guarantee; revisit it when real AI chat/tool execution is implemented or if provider APIs expose explicit capability metadata.
+
+## 2026-06-15 - Add Basic Non-Streaming Text Chat For Manual Provider Testing
+
+Date: 2026-06-15
+
+Decision: Implement the first Coach chat feature as explicit, user-triggered, non-streaming, text-only API calls to the active provider and selected model.
+
+Status: accepted
+
+Context: The app needs a small manual test path for the selected provider/API key/model flow before health summaries, tools, MCP, streaming, or persistent chat memory are introduced. The existing settings storage is already the source of truth for provider, saved-key status, and selected model.
+
+Consequences: Chat UI reads provider/key/model through `SettingsStorage` via `ChatController`. Provider-specific request mapping and response parsing live behind `AiChatService`, `ProviderAiChatService`, `OpenAiChatService`, and `GeminiChatService`. OpenAI uses the Responses API with `store: false`; Gemini uses `generateContent`. Chat messages remain in memory only for the current screen session. No new dependency, health integration, background task, backend sync, analytics, crash reporting, tool/MCP behavior, streaming, or long-term memory was added.

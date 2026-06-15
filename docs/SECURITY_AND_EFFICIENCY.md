@@ -39,6 +39,27 @@ Document security-sensitive and performance-sensitive decisions in `docs/DECISIO
 - Keep provider-specific API key handling isolated in a storage/service boundary.
 - Never send one provider's key to another provider or to an app backend.
 
+Current implementation notes:
+
+- `SecureSettingsStorage` uses `flutter_secure_storage` for API key persistence.
+- `AiSettings` stores only active provider, saved-key booleans, and selected model IDs, not API key values.
+- The Settings UI clears text fields after save or remove actions and does not display saved key values.
+- Android auto backup is disabled while backup/restore behavior for sensitive local data is undefined.
+- Model listing uses saved keys only for explicit calls to the selected provider's official model-list endpoint.
+- No AI chat calls, backend calls, analytics, crash reporting, polling, or background fetches are made by the settings feature.
+
+## Model Listing
+
+- Model listing must stay behind provider-specific service boundaries.
+- The Settings UI must not make HTTP calls directly.
+- Use saved API keys only for the selected provider's official model-list endpoint.
+- Do not log API keys, request URLs containing keys, authorization headers, or raw provider responses.
+- Fetch models only after saving a key, opening Settings for a provider with a saved key and no in-memory cache, or explicit user refresh.
+- Cache model lists only as model IDs/display names unless a future documented decision changes this.
+- Removing a provider API key must clear that provider's selected model and cached model list without affecting the other provider.
+- The Settings model picker should show likely text/tool-capable candidates and exclude obvious embedding, media, realtime, live-only, legacy, non-provider-family, and specialized non-text model families.
+- If a provider's model-list endpoint does not expose an explicit MCP/tool-capability flag, document the provider-specific approximation instead of adding hidden capability probes or repeated test calls.
+
 ## Health Data Permissions
 
 - Request only permissions needed for the active feature.
@@ -66,6 +87,14 @@ Document security-sensitive and performance-sensitive decisions in `docs/DECISIO
 - Treat prompts and responses as sensitive because they may contain health context.
 - Do not log full prompt payloads or AI responses that include private health details.
 
+Current implementation notes:
+
+- Basic Coach chat sends only user-entered text and the current in-memory chat history. No health data is included yet.
+- Chat uses the active provider, saved API key, and selected model from `SettingsStorage`; it does not maintain a second provider/model source of truth.
+- Chat messages are not persisted locally and are not written to logs, analytics, crash reports, or docs.
+- OpenAI chat calls set `store: false` in the Responses API request.
+- No tools, MCP behavior, streaming, background sends, automatic retries, or long-term memory are implemented.
+
 ## Network Calls
 
 - Network calls must be explicit and provider-specific.
@@ -74,6 +103,8 @@ Document security-sensitive and performance-sensitive decisions in `docs/DECISIO
 - Keep request payloads compact.
 - Add retries carefully; avoid retry loops that increase cost, battery usage, or duplicate AI calls.
 - Any future backend path for health data, prompts, responses, or API keys must be opt-in where appropriate and documented before implementation.
+- Current Settings network calls are limited to OpenAI/Gemini model listing and are user/API-key-driven only.
+- Current Coach network calls are limited to user-triggered OpenAI Responses API or Gemini `generateContent` text calls with short timeouts and bounded output tokens.
 
 ## Background Work
 
